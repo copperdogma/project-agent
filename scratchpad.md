@@ -1,41 +1,82 @@
-# Scratchpad - Requirements Phase
+# Scratchpad - Project Setup Phase
 
-**Current Phase**: MVP Requirements Gathering
+**Current Phase**: Project Setup
 
-**MVP Checklist**
-- [ ] Define core problem and purpose:
-  - [ ] Who are the target users?
-  - [ ] What problem does this solve for them?
-  - [ ] How will users measure success?
-- [ ] Identify MVP features (must-haves only):
-  - [ ] Core functionality (1-3 key capabilities)
-  - [ ] Critical constraints or requirements
-  - [ ] Minimum user journey/flow
-- [ ] Separate nice-to-haves from essentials:
-  - [ ] Future enhancements (post-MVP)
-  - [ ] Stretch goals
-- [ ] Document in `/docs/requirements.md`:
-  - [ ] Clear MVP definition
-  - [ ] Prioritized feature list
-  - [ ] User stories for core flows
-  - [ ] Any non-requirements details or outstanding questions in the "Non-Requirements Detail" section at the bottom
+**NOTES**
+- Do NOT start building the actual app. That's done in the next phase.
+- Update this checklist after every step
+- If possible, run the app after every step to ensure it's working.
 
-**Project Type Selection**
-- [ ] Determine appropriate project type:
-  - [ ] Review available types in `/bootstrapping/project-types/`
-  - [ ] Analyze options:
-     - [ ] Programming: For software development projects
-     - [ ] Research: For research-oriented projects
-     - [ ] [Other types as available]
-  - [ ] Provide rationale for recommendation
-- [ ] Present options with clear descriptions
-- [ ] If user discusses implementation details prematurely:
-  - [ ] Document these in the "Non-Requirements Detail" section at the bottom of requirements.md for later
-  - [ ] Guide back to project type selection first
-- [ ] Get explicit confirmation of project type choice
+**Tasks**  
+- [x] Read `/docs/architecture.md` to understand the technical requirements but don't act yet.
+- [x] Read `/bootstrapping/project-types/programming/project-setup/starter-repos.md` to get the curated list URLs.
+- [x] Visit ONLY the URLs provided in the starter-repos.md file as starting points.
+- [x] For each URL in starter-repos.md:
+   - [x] Navigate to relevant sections that match the project requirements.
+   - [x] Document the navigation path through the curated list.
+   - [x] Identify potential repositories that match the architecture requirements.
+- [x] Ensure you've explored all URLs in starter-repos.md before proceeding.
+- [x] For each identified repository, document:
+   - [x] Source URL (must be from the lists in starter-repos.md)
+   - [x] Path through curated lists
+   - [x] Features that match requirements
+   - [x] Missing features
+   - [x] Compatibility score (1-10)
+- [x] Present the top 3 repositories to the user with detailed analysis.
+- [ ] If unable to find 3 suitable repositories from the URLs in starter-repos.md, report specific difficulties and request permission for broader web searches.
+- [ ] Make a checklist in this document of what steps are needed to either a) pull and configure the chosen starter repo, or b) install and configure the chosen custom architecture.
+- [ ] Evaluate your checklist vs the `/docs/stories.md` document to ensure you're not doing project work in the setup phase. If you have extra detail that's misssing from `/docs/stories.md`, add it to the individual stories when appropriate.
+- [ ] If you pulled a starter repo, check its README file for a project overview and add the setup steps you find there to this checklist.
+- [ ] Configure development tools (e.g., ESLint, Prettier)  
+- [ ] Set up version control (e.g., git init)
+- [ ] Erase and rewrite the README.md file so it's perfect for this newly set up project
+- [ ] Document the new project structure in `/docs/design.md`
+- [ ] Double check all steps are complete before moving on to the next phase
 
-**Ready to Build?**
-- When the MVP is clearly defined and project type selected, ask:
-  "I think we have enough requirements for an MVP version of the project. Would you like to start building with the [selected_project_type] project type?"
-- If yes, run: `./bootstrapping/scripts/transition_to_execute.sh [project_type]`
-    - Then read the new scratchpad.mdc and scratchpad.md and follow the new instructions.
+**Transition to Next Phase**
+- Once all tasks are checked off, ask: "Are you ready to move to the Work phase?"
+- To move to the next phase, run `./bootstrapping/scripts/transition_to_execute.sh programming work`
+
+**User Input**  
+- [Log anything the user has said so far]
+
+**Quick Start Assumptions**  
+- [If quick start is used, list assumptions made, e.g., "Assumed GitHub for version control."]
+
+**Issues or Blockers**  
+- [Log any issues]
+
+**Repo Exploration Findings**
+- Candidate 1: NextAuth + PSQL Base Template  
+  - Source: https://github.com/copperdogma/next-authjs-psql-base-template  
+  - Path: starter-repos.md → "Next.js + NextAuth.js + PostgreSQL Base Template"  
+  - Matches: strong lint/test scaffolding, rate-limit patterns, env management.  
+  - Missing: not MCP; web app stack; no deterministic ops or git-diff engine.  
+  - Compatibility: 6/10 (reference for practices, not runtime).
+
+- Candidate 2: Fastify (Node HTTP server)  
+  - Source: https://github.com/fastify/fastify  
+  - Path: starter-repos.md → GitHub Awesome Lists → Node.js → Fastify  
+  - Matches: HTTPS, mTLS support, rate-limiter plugins, good perf.  
+  - Missing: MCP transport, git integration, deterministic ops.  
+  - Compatibility: 8/10 (solid base for custom MCP server).
+
+- Candidate 3: NestJS framework  
+  - Source: https://github.com/nestjs/nest  
+  - Path: starter-repos.md → awesome-nestjs → nest  
+  - Matches: modules for validation, rate limiting, DI.  
+  - Missing: heavier footprint; still no deterministic ops/git layer.  
+  - Compatibility: 5/10 (overkill for this service).
+
+Recommendation: Build a minimal custom Node/TS MCP server, borrow linting/testing/rate-limit patterns from Candidate 1, and use Fastify (Candidate 2) for HTTPS/mTLS and plugin ecosystem.
+
+**Setup Checklist (custom architecture)**
+- [ ] Initialize Node+TS workspace; add eslint/prettier, tsconfig.
+- [ ] Add deps: fastify, fastify-rate-limit, dotenv, simple-git, pino, selfsigned (dev).
+- [ ] Implement mTLS HTTPS server; dev script to generate certs; EMAIL_OVERRIDE support.
+- [ ] Implement MCP transport skeleton + tool registration.
+- [ ] Implement vault resolver + locking; configure VAULT_ROOT.
+- [ ] Implement snapshot/getDocument/applyOps/create/list/undo; git commit+diff.
+- [ ] Add server.health/server.version; read-only guard; error model; limits.
+- [ ] Add audit log JSONL and rate limits.
+- [ ] Update README and document structure in `docs/design.md`.
