@@ -31,7 +31,7 @@
 - [x] Set up version control (e.g., git init)
 - [x] Erase and rewrite the README.md file so it's perfect for this newly set up project
 - [x] Document the new project structure in `/docs/design.md`
-- [ ] Double check all steps are complete before moving on to the next phase
+- [x] Double check all steps are complete before moving on to the next phase
 
 **Transition to Next Phase**
 - Once all tasks are checked off, ask: "Are you ready to move to the Work phase?"
