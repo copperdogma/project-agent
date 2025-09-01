@@ -54,3 +54,24 @@ We will not adopt these directly, but will reference them for API shapes and edg
 ## Configuration
 - VAULT_ROOT: '/Users/cam/Library/Mobile Documents/iCloud~md~obsidian/Documents/obsidian/'
 - PORT=7777, TIMEZONE=America/Edmonton, DATE=YYYYMMDD
+
+## Current Project Structure
+```
+project-agent/
+  src/
+    index.ts               # Fastify server with /health and /version
+  docs/
+    requirements.md
+    design.md
+    architecture.md
+    stories.md
+    stories/
+  bootstrapping/
+    project-types/
+    scripts/
+  .env.example
+  tsconfig.json
+  eslint.config.mjs
+  .prettierrc
+  README.md
+```

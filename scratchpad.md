@@ -27,10 +27,10 @@
 - [ ] Make a checklist in this document of what steps are needed to either a) pull and configure the chosen starter repo, or b) install and configure the chosen custom architecture.
 - [ ] Evaluate your checklist vs the `/docs/stories.md` document to ensure you're not doing project work in the setup phase. If you have extra detail that's misssing from `/docs/stories.md`, add it to the individual stories when appropriate.
 - [ ] If you pulled a starter repo, check its README file for a project overview and add the setup steps you find there to this checklist.
-- [ ] Configure development tools (e.g., ESLint, Prettier)  
+- [x] Configure development tools (e.g., ESLint, Prettier)  
 - [ ] Set up version control (e.g., git init)
 - [ ] Erase and rewrite the README.md file so it's perfect for this newly set up project
-- [ ] Document the new project structure in `/docs/design.md`
+- [x] Document the new project structure in `/docs/design.md`
 - [ ] Double check all steps are complete before moving on to the next phase
 
 **Transition to Next Phase**

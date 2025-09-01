@@ -1,3 +1,29 @@
+# Project Agent MCP Server (Obsidian)
+
+A local Model Context Protocol (MCP) server to edit Markdown in your Obsidian vault using deterministic ops with git-backed diffs. Preserves existing section order, uses YYYYMMDD date format, supports optimistic concurrency/idempotency, and includes a read-only mode.
+
+Status: Project Setup phase; minimal server scaffold running (Fastify). Endpoints: `/health`, `/version`. Optional TLS via self-signed certs.
+
+Quick start:
+```bash
+npm install
+cp .env.example .env
+npm run build
+node dist/index.js
+curl -s http://127.0.0.1:7777/health
+curl -s http://127.0.0.1:7777/version
+```
+
+Dev TLS (optional):
+```bash
+npm run generate:certs
+# then set TLS_CERT_PATH and TLS_KEY_PATH in .env
+```
+
+Roadmap (per `/docs/requirements.md`): project.snapshot, project.getDocument, project.applyOps, project.create, project.list, project.undo; deterministic ops + git diff; standardized errors; audit + rate limiting; post-MVP: previewPlan/search.
+
+---
+
 # Cursor Project Bootstrapper
 
 > **🚀 This is a GitHub template repository!** Click "Use this template" to create your own project.
