@@ -12,7 +12,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "lint": "eslint .",
-    "format": "prettier -w ."
+    "format": "prettier -w .",
+    "generate:certs": "node scripts/generate-dev-certs.mjs"
   },
   "repository": {
     "type": "git",
@@ -27,9 +28,15 @@
   "homepage": "https://github.com/copperdogma/project-agent#readme",
   "type": "module",
   "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "@types/eslint__js": "^8.42.3",
     "@types/node": "^24.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.41.0",
+    "@typescript-eslint/parser": "^8.41.0",
     "eslint": "^9.34.0",
+    "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.6.2",
+    "selfsigned": "^3.0.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"
   },
