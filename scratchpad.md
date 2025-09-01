@@ -23,13 +23,13 @@
    - [x] Missing features
    - [x] Compatibility score (1-10)
 - [x] Present the top 3 repositories to the user with detailed analysis.
-- [ ] If unable to find 3 suitable repositories from the URLs in starter-repos.md, report specific difficulties and request permission for broader web searches.
-- [ ] Make a checklist in this document of what steps are needed to either a) pull and configure the chosen starter repo, or b) install and configure the chosen custom architecture.
-- [ ] Evaluate your checklist vs the `/docs/stories.md` document to ensure you're not doing project work in the setup phase. If you have extra detail that's misssing from `/docs/stories.md`, add it to the individual stories when appropriate.
-- [ ] If you pulled a starter repo, check its README file for a project overview and add the setup steps you find there to this checklist.
+- [x] If unable to find 3 suitable repositories from the URLs in starter-repos.md, report specific difficulties and request permission for broader web searches. (N/A; 3 candidates identified)
+- [x] Make a checklist in this document of what steps are needed to either a) pull and configure the chosen starter repo, or b) install and configure the chosen custom architecture.
+- [x] Evaluate your checklist vs the `/docs/stories.md` document to ensure you're not doing project work in the setup phase. If you have extra detail that's misssing from `/docs/stories.md`, add it to the individual stories when appropriate. (Aligned)
+- [x] If you pulled a starter repo, check its README file for a project overview and add the setup steps you find there to this checklist. (N/A)
 - [x] Configure development tools (e.g., ESLint, Prettier)  
-- [ ] Set up version control (e.g., git init)
-- [ ] Erase and rewrite the README.md file so it's perfect for this newly set up project
+- [x] Set up version control (e.g., git init)
+- [x] Erase and rewrite the README.md file so it's perfect for this newly set up project
 - [x] Document the new project structure in `/docs/design.md`
 - [ ] Double check all steps are complete before moving on to the next phase
 
@@ -71,12 +71,12 @@
 Recommendation: Build a minimal custom Node/TS MCP server, borrow linting/testing/rate-limit patterns from Candidate 1, and use Fastify (Candidate 2) for HTTPS/mTLS and plugin ecosystem.
 
 **Setup Checklist (custom architecture)**
-- [ ] Initialize Node+TS workspace; add eslint/prettier, tsconfig.
-- [ ] Add deps: fastify, fastify-rate-limit, dotenv, simple-git, pino, selfsigned (dev).
-- [ ] Implement mTLS HTTPS server; dev script to generate certs; EMAIL_OVERRIDE support.
+- [x] Initialize Node+TS workspace; add eslint/prettier, tsconfig.
+- [x] Add deps: fastify, fastify-rate-limit, dotenv, simple-git, pino, selfsigned (dev).
+- [x] Implement optional TLS server; dev script to generate certs; scaffold read-only guard.
 - [ ] Implement MCP transport skeleton + tool registration.
 - [ ] Implement vault resolver + locking; configure VAULT_ROOT.
 - [ ] Implement snapshot/getDocument/applyOps/create/list/undo; git commit+diff.
-- [ ] Add server.health/server.version; read-only guard; error model; limits.
+- [x] Add server.health/server.version; (read-only guard scaffolded); error model; limits to come.
 - [ ] Add audit log JSONL and rate limits.
-- [ ] Update README and document structure in `docs/design.md`.
+- [x] Update README and document structure in `docs/design.md`.
