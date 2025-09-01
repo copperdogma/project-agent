@@ -1,0 +1,30 @@
+---
+description: Planning Phase Scratchpad Rules
+globs: 
+alwaysApply: true
+---
+# Planning Phase Scratchpad Memory File
+
+[scratchpad.md](mdc:scratchpad.md) already exists. It tracks the Planning Phase tasks and is your external memory. Use it to constantly help you stay on track.
+
+Update it whenever you:
+- Complete a task (check off items in the checklist)
+- Gather new user input (add under "User Input")
+- Identify issues (add under "Issues or Blockers")
+- Make important decisions (add under "Decisions Made")
+
+---
+
+### Instructions
+- Read [scratchpad.md](mdc:scratchpad.md) and follow the detailed checklists in that document.
+- Focus on translating requirements into concrete design, architecture, and stories.
+- Frequently suggest to the user what the next obvious steps are and suggest the most logical one.
+- If the user requests a quick start, make reasonable assumptions based on requirements, document them, and validate with the user.
+- When all tasks in [scratchpad.md](mdc:scratchpad.md) are checked off, ask if the user is ready to move to the Project Setup phase.
+
+### Transition
+- When the user confirms readiness to move to the Project Setup phase, run:
+  `./bootstrapping/scripts/transition_to_execute.sh programming project-setup`
+
+### Guard Clause
+**MANDATORY**: You CANNOT proceed to the next phase unless ALL tasks in [scratchpad.md](mdc:scratchpad.md) are checked off as complete.

@@ -1,0 +1,52 @@
+---
+description: AI memory system
+globs: 
+alwaysApply: true
+---
+---
+description: AI memory system
+globs: 
+alw
+---
+# Requirements Phase Scratchpad Memory File
+
+[scratchpad.md](mdc:scratchpad.md) already exists. It tracks the Requirements Phase tasks and is your external memory. Use it to constantly help you stay on track.
+
+Update it whenever you:
+- Complete a task (check off items in the checklist)
+- Gather new user input (add under "User Input")
+- Identify issues (add under "Issues or Blockers")
+- Discover outsons (add under "Outstanding Questions")
+
+Remember that `/docs/requirements.md` is the only document that survives when moving between phases. Any implementation details, architecture ideas, or other non-requirements information should be documented in the "Non-Requirements Detail" section at the bottom of `/docs/requirements.md`, not in scratchpad.md.
+
+---
+
+### Instructions
+- Read [scratchpad.md](mdc:scratchpad.md) and follow the checklist in that document.
+- Focus on gathering a clear MVP (Minimum Viable Product) definition.
+- Prioritize understanding core features vs nice-to-haves.
+- Update `/docs/requirements.md` with organized requirements based on user input.
+- **Proactively signal** when there's enough information to start building.
+- **Quick Start**: If the user requests to skip steps, offer a streamlined approach.
+
+### Project Type Selection
+- Once you have sufficient MVP requirements, suggest a project type:
+  - Reference available types in `/bootstrapping/project-types/` (e.g., "programming," "research").
+  - Provide a rationale based on the requirements, e.g., *"Your need for a web app suggests the 'programming' type."*
+- If the user moves too much into architecture or implementation details:
+  - Record these non-requirements details in the "Non-Requirements Detail" section at the bottom of `/docs/requirements.md`
+  - Suggest choosing a project type to better address these technical items
+- List all project types with brief descriptions for the user to review.
+- Ask: *"Are you satisfied with the MVP requirements? Which project type would you like to proceed with?"*
+- Confirm the user's choice before transitioning.
+
+### Transition
+- When you have sufficient MVP requirements and the user confirms project type, run:
+  `./bootstrapping/scripts/transition_to_execute.sh [project_type]`
+
+### Guard Clause
+**MANDATORY**: You CANNOT proceed to the next phase without:
+1. A clear MVP definition
+2. The user explicitly confirming they're ready to move forward
+3. A confirmed project type selection
