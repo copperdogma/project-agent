@@ -115,8 +115,10 @@ export function registerProjectTools(mcpServer: McpServer): void {
         "Commit discovery: use commit hashes from applyOps responses (commit), or the current_commit in snapshot/getDocument; you can also view git log externally (a history tool may arrive later).\n" +
         "Scope: reverts ONLY the specified commit (later commits remain); this creates a new revert commit (no history rewrite). You can revert the revert if needed.\n" +
         "Preconditions: worktree must be clean; merge commits are not supported (MERGE_COMMIT_NOT_SUPPORTED).\n" +
+        "Usage: (1) Ensure no uncommitted changes; (2) Pick a non-merge commit hash (e.g., from applyOps.commit); (3) Call project_undo with {commit}.\n" +
         "Errors: NOT_A_REPO when vault is not a git repo; NOT_FOUND_COMMIT when the commit is unknown; WORKDIR_DIRTY when uncommitted changes exist; REVERT_FAILED on conflicts.\n" +
-        "Return: JSON {revert_commit:string|null, diff:string} where diff is git unified diff for that revert commit (commit^!).",
+        "Return: JSON {revert_commit:string|null, diff:string} where diff is git unified diff for that revert commit (commit^!).\n" +
+        "Example input: {\"commit\":\"abc123...\"}. Example output: {\"revert_commit\":\"def456...\",\"diff\":\"diff --git ...\"}",
       inputSchema: { commit: z.string() },
     },
     async (args: any) => {
