@@ -114,7 +114,8 @@ export function registerProjectTools(mcpServer: McpServer): void {
         "Undo (revert) a commit in the vault git repository.\n" +
         "Commit discovery: use commit hashes from applyOps responses (commit), or the current_commit in snapshot/getDocument; you can also view git log externally (a history tool may arrive later).\n" +
         "Scope: reverts ONLY the specified commit (later commits remain); this creates a new revert commit (no history rewrite). You can revert the revert if needed.\n" +
-        "Errors: NOT_A_REPO when vault is not a git repo; NOT_FOUND_COMMIT when the commit is unknown; REVERT_FAILED on conflicts.\n" +
+        "Preconditions: worktree must be clean; merge commits are not supported (MERGE_COMMIT_NOT_SUPPORTED).\n" +
+        "Errors: NOT_A_REPO when vault is not a git repo; NOT_FOUND_COMMIT when the commit is unknown; WORKDIR_DIRTY when uncommitted changes exist; REVERT_FAILED on conflicts.\n" +
         "Return: JSON {revert_commit:string|null, diff:string} where diff is git unified diff for that revert commit (commit^!).",
       inputSchema: { commit: z.string() },
     },

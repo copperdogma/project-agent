@@ -28,6 +28,23 @@ async function verifyCommitExists(git: ReturnType<typeof simpleGit>, commit: str
   }
 }
 
+async function ensureCleanWorktree(git: ReturnType<typeof simpleGit>): Promise<void> {
+  const st = await git.status();
+  if (!st.isClean()) {
+    throw new Error("WORKDIR_DIRTY: uncommitted changes present");
+  }
+}
+
+async function isMergeCommit(git: ReturnType<typeof simpleGit>, commit: string): Promise<boolean> {
+  try {
+    const parents = await git.show(["--no-patch", "--pretty=%P", commit]);
+    const parts = String(parents || "").trim().split(/\s+/).filter(Boolean);
+    return parts.length > 1;
+  } catch {
+    return false;
+  }
+}
+
 export async function undoCommit(input: UndoInput): Promise<UndoResult> {
   const { commit } = input;
   const vaultRoot = getVaultRoot();
@@ -36,6 +53,12 @@ export async function undoCommit(input: UndoInput): Promise<UndoResult> {
 
   // Validate commit exists in this repo
   await verifyCommitExists(git, commit);
+  await ensureCleanWorktree(git);
+
+  // Not supporting reverting merge commits yet to avoid complex parent selection/conflicts
+  if (await isMergeCommit(git, commit)) {
+    throw new Error("MERGE_COMMIT_NOT_SUPPORTED: select a non-merge commit to revert");
+  }
 
   // Perform revert with no edit; generate new commit
   try {
