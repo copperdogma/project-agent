@@ -5,6 +5,7 @@ import { getDocument } from "../document.js";
 import { listProjects } from "../list.js";
 import { applyOps } from "../apply.js";
 import { createProject } from "../create.js";
+import { undoCommit } from "../undo.js";
 
 export function registerProjectTools(mcpServer: McpServer): void {
   mcpServer.registerTool(
@@ -98,6 +99,23 @@ export function registerProjectTools(mcpServer: McpServer): void {
       if (args?.slug !== undefined) input.slug = String(args.slug);
       if (args?.router_email !== undefined) input.router_email = String(args.router_email);
       const payload = createProject(input);
+      return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+    },
+  );
+
+  mcpServer.registerTool(
+    "project_undo",
+    {
+      description:
+        "Undo (revert) a commit in the vault git repository.\n" +
+        "Commit discovery: use commit hashes from applyOps responses (commit), or the current_commit in snapshot/getDocument; you can also view git log externally (a history tool may arrive later).\n" +
+        "Scope: reverts ONLY the specified commit (later commits remain); this creates a new revert commit (no history rewrite). You can revert the revert if needed.\n" +
+        "Errors: NOT_A_REPO when vault is not a git repo; NOT_FOUND_COMMIT when the commit is unknown; REVERT_FAILED on conflicts.\n" +
+        "Return: JSON {revert_commit:string|null, diff:string} where diff is git unified diff for that revert commit (commit^!).",
+      inputSchema: { commit: z.string() },
+    },
+    async (args: any) => {
+      const payload = await undoCommit({ commit: String(args?.commit || "") });
       return { content: [{ type: "text", text: JSON.stringify(payload) }] };
     },
   );

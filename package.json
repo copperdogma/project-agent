@@ -14,6 +14,7 @@
     "test:list": "npm run build && node scripts/test-list.mjs",
     "test:register": "npm run build && node scripts/test-register.mjs",
     "test:create": "npm run build && node scripts/test-create.mjs",
+    "test:undo": "npm run build && node scripts/test-undo.mjs",
     "test:integration": "npm run build && node scripts/test-integration-list-fetch.mjs",
     "test:applyOps": "npm run build && node scripts/test-apply-ops.mjs",
     "test:integration:applyOps": "npm run build && node scripts/test-integration-apply-ops.mjs",
