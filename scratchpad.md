@@ -9,35 +9,33 @@
 
       ## Current Story
 
-  Story 003 — Snapshot tool
+  Story 004 — GetDocument tool
 
 ## Current Task
 
-Sketch and implement snapshot builder (sections, toc, tails, anchors, commit)
+Implement getDocument(full contents + path/size/commit) and tests
 
 ## Plan Checklist
 
-- [ ] Create `src/snapshot.ts` with API `buildSnapshot(slug)`
-- [ ] Implement section parsing, anchor extraction
-- [ ] Build `toc` and `per_section_tail` (default 10)
-- [ ] Integrate with git to get `current_commit`
-- [ ] Wire date/tz to return `date_local` and `tz`
-- [ ] Add tests with example vault file
+- [ ] Create `src/document.ts` with `getDocument(slug)`
+- [ ] Reuse vault resolver to locate file by slug
+- [ ] Return frontmatter, full content, path, size, current_commit
+- [ ] Add tests using temp vault files
 
 ## Issues/Blockers
 
-- [ ] Choose tail size via env `SNAPSHOT_TAIL` with default 10
+- [ ] Ensure large files handled efficiently (streaming not required yet)
 
 ## Recently Completed
 
-- [x] Story 002 — Vault resolver + safe path sandbox
+- [x] Story 003 — Snapshot tool
 
 ## Decisions Made
 
-- [ ] Preserve existing section order strictly
+- [ ] Use same frontmatter parser as snapshot
 
 ## Lessons Learned
 
-- [ ] Avoid reading whole files when not needed; prefer tails
+- [ ] Keep API outputs consistent across tools for client simplicity
 
 Keep this file concise (<300 lines): summarize or remove outdated info regularly to prevent overloading the context. Focus on the current phase and immediate next steps.
