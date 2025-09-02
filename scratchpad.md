@@ -9,15 +9,17 @@
 
       ## Current Story
 
-  Story —
+  Story 008 — Undo tool
 
 ## Current Task
 
-Waiting for next task
+Implement undo via git revert with revert_commit + diff
 
 ## Plan Checklist
 
- 
+- [ ] Register MCP tool `project_undo`
+- [ ] Implement git revert validation and execution
+- [ ] Unit and integration tests
 
 ## Issues/Blockers
 
