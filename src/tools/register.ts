@@ -11,7 +11,9 @@ export function registerProjectTools(mcpServer: McpServer): void {
   mcpServer.registerTool(
     "project_snapshot",
     {
-      description: "Return a compact snapshot for a project by slug",
+      description: "Return a compact snapshot for a project by slug.\n" +
+        "Fields: {frontmatter,toc,per_section_tail,anchors_index,recent_ops,current_commit,date_local,tz,path,size_bytes}.\n" +
+        "Example: {\"toc\":[\"Notes\"],\"per_section_tail\":{\"Notes\":[\"20250101 ai:... ^abc123\"]},\"anchors_index\":{\"^abc123\":{section:\"Notes\",excerpt:\"...\"}},...}",
       inputSchema: { slug: z.string() },
     },
     async (args: any) => {
@@ -24,7 +26,8 @@ export function registerProjectTools(mcpServer: McpServer): void {
   mcpServer.registerTool(
     "project_get_document",
     {
-      description: "Return full document content and metadata by slug",
+      description: "Return full document content and metadata by slug.\n" +
+        "Fields: {frontmatter,content,path,size_bytes,current_commit,date_local,tz}. content is UTF-8 markdown.",
       inputSchema: { slug: z.string() },
     },
     async (args: any) => {
@@ -36,7 +39,7 @@ export function registerProjectTools(mcpServer: McpServer): void {
 
   mcpServer.registerTool(
     "project_list",
-    { description: "List available projects (title, slug, path)", inputSchema: {} },
+    { description: "List available projects (title, slug, path). Sorted by title; slugs are unique.", inputSchema: {} },
     async () => {
       const payload = listProjects();
       return { content: [{ type: "text", text: JSON.stringify(payload) }] };
@@ -87,7 +90,8 @@ export function registerProjectTools(mcpServer: McpServer): void {
         "Slug: optional; auto-generated from title if omitted (lowercase, dashes).\n" +
         "router_email: optional metadata for routing/ownership; stored in frontmatter if provided.\n" +
         "Validation: title is required; filename is sanitized (replaces unsafe chars). Unique slug enforced via registry.\n" +
-        "Template: creates frontmatter (title, slug, router_email?) and starter sections: Uncategorized, Notes, Resources.",
+        "Template: creates frontmatter (title, slug, router_email?) and starter sections: Uncategorized, Notes, Resources.\n" +
+        "Returns: {title, slug, path}.",
       inputSchema: {
         title: z.string(),
         slug: z.string().optional(),
@@ -119,4 +123,5 @@ export function registerProjectTools(mcpServer: McpServer): void {
       return { content: [{ type: "text", text: JSON.stringify(payload) }] };
     },
   );
+
 }
