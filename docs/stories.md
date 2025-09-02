@@ -16,7 +16,7 @@
 | Story ID | Title                                             | Status      | Link                                               |
 | -------- | ------------------------------------------------- | ----------- | -------------------------------------------------- |
 | 001      | Implement MCP transport + auth shell              | Done        | /docs/stories/story-001-transport-auth.md          |
-| 001b     | Minimal MCP transport + tool registration (stdio) | In Progress | /docs/stories/story-001b-mcp-minimal.md            |
+| 001b     | Minimal MCP transport + tool registration (stdio) | Done        | /docs/stories/story-001b-mcp-minimal.md            |
 | 002      | Vault resolver + safe path sandbox                | To Do       | /docs/stories/story-002-vault-resolver.md          |
 | 003      | Snapshot tool                                     | To Do       | /docs/stories/story-003-snapshot.md                |
 | 004      | GetDocument tool                                  | To Do       | /docs/stories/story-004-get-document.md            |

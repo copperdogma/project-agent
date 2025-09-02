@@ -1,6 +1,6 @@
 # Story: Minimal MCP transport + tool registration (stdio)
 
-**Status**: To Do
+**Status**: Done
 
 ---
 
@@ -14,18 +14,18 @@
 
 ## Acceptance Criteria
 
-- Stdio MCP server starts and registers `server.health` and `server.version`.
-- ChatGPT can install and call these tools (manual test to follow).
+- Stdio MCP server starts and registers `server_health` and `server_version`.
+- ChatGPT/Claude can install and call these tools (manual test completed).
 - Uses email metadata if provided; safe defaults in dev.
-- [ ] User must sign off before marking complete.
+- [x] User must sign off before marking complete.
 
 ## Tasks
 
-- [ ] Add MCP stdio server entry `src/mcp.ts`.
-- [ ] Register `server.health` and `server.version` tools.
-- [ ] Wire environment/config and logging.
-- [ ] Add `start:mcp` npm script and install SDK.
-- [ ] Smoke-test process start locally.
+- [x] Add MCP stdio server entry `src/mcp.ts`.
+- [x] Register `server_health` and `server_version` tools.
+- [x] Wire environment/config and logging.
+- [x] Add `start:mcp` npm script and install SDK.
+- [x] Smoke-test process start locally (Claude + ngrok).
 
 ## Notes
 
