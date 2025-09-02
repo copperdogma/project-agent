@@ -1,6 +1,6 @@
 # Story: Vault resolver + safe path sandbox
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -21,9 +21,9 @@
 
 ## Tasks
 
-- [ ] Implement safePathResolve(root, relativePath).
-- [ ] Implement readFile/writeFile with lockfile.
-- [ ] Detect/store line ending style.
+- [x] Implement safePathResolve(root, relativePath).
+- [x] Implement readFile/writeFile with lockfile.
+- [x] Detect/store line ending style.
 - [ ] Unit tests with malicious paths.
 
 ## Notes

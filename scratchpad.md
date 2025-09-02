@@ -1,38 +1,42 @@
 # Scratchpad - Work Phase
 
-\*\*NOTES:
+**NOTES:
 
 - All To Do items should be added as checklists.
 - Do not check something off unless you're confident it's complete.
 - Reorganize now and then, putting unfinished tasks at the top and finished ones at the bottom.
-  \*\*
+  **
 
       ## Current Story
 
-  Story 001b — Minimal MCP transport + tool registration (stdio)
+  Story 002 — Vault resolver + safe path sandbox
 
 ## Current Task
 
-Implement stdio MCP server with health/version tools
+Implement vault resolver, locking, and line-ending helpers
 
 ## Plan Checklist
 
-- [ ] Create `src/mcp.ts` MCP stdio server
-- [ ] Register `server.health` and `server.version`
-- [ ] Add `start:mcp` script; install SDK
-- [ ] Smoke-test local startup
+- [x] Create `src/vault.ts` with `safePathResolve`
+- [x] Add read/write with lockfile
+- [x] Add line ending detection and normalization helpers
+- [ ] Wire `VAULT_ROOT` configuration validation and docs
+- [ ] Add unit tests for traversal attempts and normal cases
+- [ ] Integrate into future tools (snapshot, getDocument, applyOps)
 
 ## Issues/Blockers
 
-- [ ] Confirm @modelcontextprotocol/sdk API shape for tool registration
+- [ ] Decide on test framework (vitest/jest) or lightweight node script
 
 ## Recently Completed
 
-- [ ] Story-001: MCP transport + auth shell complete
+- [x] Story-001b: Minimal MCP transport + tool registration (stdio)
+- [x] Story-001: MCP transport + auth shell complete
 
 ## Decisions Made
 
-- [ ] Expose only server._ tools in 001b; project._ later
+- [x] Use per-file lockfiles with `.lock` suffix
+- [x] Preserve detected line endings on write when provided
 
 ## Lessons Learned
 
