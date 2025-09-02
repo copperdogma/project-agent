@@ -47,6 +47,7 @@ When creating a new story file in the `/docs/stories` folder:
 
 - [ ] [TASK 1]
 - [ ] [TASK 2]
+- [ ] Register MCP tools (stdio/SSE) and verify client discovery (use underscores; no periods in tool names)
 
 ## Notes
 

@@ -66,6 +66,16 @@ async function run() {
         if (!snap.toc.includes("Идеи")) throw new Error("unicode heading missing");
       },
     },
+    {
+      name: "no frontmatter, standard headings",
+      file: "NoFM.md",
+      md: `# LED D&D Miniature\nRegular 25mm...\n## Build\n- step1 ^b11111\n## Issues\n- note\n`,
+      slug: "nofm",
+      expect: (snap) => {
+        if (!Array.isArray(snap.toc) || snap.toc.length < 2) throw new Error("toc not parsed for no-frontmatter");
+        if (!snap.per_section_tail["Build"]) throw new Error("tails missing for Build");
+      },
+    },
   ];
 
   const { buildSnapshot } = await import(new URL("../dist/snapshot.js", import.meta.url));

@@ -89,6 +89,12 @@ export function normalizeLineEndings(content: string, to: LineEndingStyle): stri
 
 export function readFileSafely(relativePath: string): { content: string; lineEnding: LineEndingStyle; absolutePath: string } {
   const { absolutePath } = safePathResolve(getVaultRoot(), relativePath);
+  // Brief wait if locked
+  const lf = lockfilePath(absolutePath);
+  const start = Date.now();
+  while (fs.existsSync(lf) && Date.now() - start < 2000) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 25);
+  }
   const buf = fs.readFileSync(absolutePath);
   const text = buf.toString("utf8");
   const le = detectLineEnding(text);

@@ -19,8 +19,8 @@
 | 001b     | Minimal MCP transport + tool registration (stdio) | Done        | /docs/stories/story-001b-mcp-minimal.md            |
 | 002      | Vault resolver + safe path sandbox                | Done        | /docs/stories/story-002-vault-resolver.md          |
 | 003      | Snapshot tool                                     | Done        | /docs/stories/story-003-snapshot.md                |
-| 004      | GetDocument tool                                  | To Do       | /docs/stories/story-004-get-document.md            |
-| 005      | ApplyOps engine (append/move/update/delete)       | To Do       | /docs/stories/story-005-apply-ops.md               |
+| 004      | GetDocument tool                                  | Done        | /docs/stories/story-004-get-document.md            |
+| 005      | ApplyOps engine (append/move/update/delete)       | Done        | /docs/stories/story-005-apply-ops.md               |
 | 006      | Create tool + registry                            | To Do       | /docs/stories/story-006-create-and-registry.md     |
 | 007      | List tool                                         | To Do       | /docs/stories/story-007-list.md                    |
 | 008      | Undo tool                                         | To Do       | /docs/stories/story-008-undo.md                    |

@@ -3,6 +3,10 @@ import fs from "fs";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { buildSnapshot } from "./snapshot.js";
+import { getDocument } from "./document.js";
+import { listProjects } from "./list.js";
+import { registerProjectTools } from "./tools/register.js";
 
 const appName = "project-agent";
 const appVersion = "1.0.0";
@@ -47,6 +51,9 @@ async function main(): Promise<void> {
       return { content: [{ type: "text", text: JSON.stringify(result) }] };
     },
   );
+
+  // project tools
+  registerProjectTools(mcpServer);
 
   const transport = new StdioServerTransport();
   await mcpServer.connect(transport);

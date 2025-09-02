@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { simpleGit } from "simple-git";
 import { getVaultRoot } from "./vault.js";
+import { deriveSlugFromTitle } from "./slug.js";
 
 export interface SnapshotPayload {
   frontmatter: Record<string, string>;
@@ -32,7 +33,8 @@ function formatDateYYYYMMDD(timezone: string): string {
 }
 
 function parseFrontmatter(raw: string): { frontmatter: Record<string, string>; contentStart: number } {
-  const lines = raw.split(/\n|\r\n|\r/);
+  const sanitized = raw.replace(/^\uFEFF/, "");
+  const lines = sanitized.split(/\n|\r\n|\r/);
   let idx = 0;
   const fm: Record<string, string> = {};
   if ((lines[0] ?? "").trim() === "---") {
@@ -66,7 +68,15 @@ function findFileBySlug(slug: string, vaultRoot: string): string | null {
       try {
         const raw = fs.readFileSync(abs, "utf8");
         const { frontmatter } = parseFrontmatter(raw);
-        if ((frontmatter.slug || frontmatter.Slug) === slug) {
+        const fmSlug = (frontmatter.slug || (frontmatter as any).Slug || "").trim();
+        const fmTitle = (frontmatter.title || (frontmatter as any).Title || "").trim();
+        const fileBase = path.basename(entry, ".md");
+        const candidates = new Set<string>([
+          fmSlug,
+          deriveSlugFromTitle(fmTitle || fileBase),
+          deriveSlugFromTitle(fileBase),
+        ].filter(Boolean) as string[]);
+        if (candidates.has(slug)) {
           return abs;
         }
       } catch {}
@@ -77,17 +87,18 @@ function findFileBySlug(slug: string, vaultRoot: string): string | null {
 }
 
 function parseSectionsPreserveOrder(raw: string, startIndex: number): { toc: string[]; sections: Record<string, string[]> } {
-  const lines = raw.split(/\n|\r\n|\r/);
+  const lines = raw.replace(/^\uFEFF/, "").split(/\n|\r\n|\r/);
   const toc: string[] = [];
   const sections: Record<string, string[]> = {};
   let current: string | null = null;
   for (let i = startIndex; i < lines.length; i += 1) {
     const line = String(lines[i] ?? "");
-    const heading = /^#\s+(.+?)\s*$/.exec(line);
+    const heading = /^\s*#{1,6}\s+(.+?)\s*$/.exec(line);
     if (heading) {
-      current = (heading[1] ?? "").trim();
-      if (!toc.includes(current)) toc.push(current);
-      if (!sections[current]) sections[current] = [];
+      const name = (heading[1] ?? "").trim();
+      current = name;
+      if (!toc.includes(name)) toc.push(name);
+      if (!sections[name]) sections[name] = [];
       continue;
     }
     if (current) {

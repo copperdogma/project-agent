@@ -1,6 +1,6 @@
 # Story: List tool
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -19,8 +19,8 @@
 
 ## Tasks
 
-- [ ] Load and validate registry file.
-- [ ] Return sorted list by title.
+- [x] Load and validate registry file.
+- [x] Return sorted list by title.
 
 ## Notes
 

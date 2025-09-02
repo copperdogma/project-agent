@@ -38,6 +38,7 @@ MCP server that edits Markdown files in the user's Obsidian vault via determinis
 - Auditing: JSONL audit under `.project-agent/logs/`
 - Rate limiting: per-email and per-slug throttles
 - Formatting: preserve original line endings; record in snapshot
+- MCP tool naming: use underscores; periods in tool names are not supported by some clients
 
 ## External References
 
