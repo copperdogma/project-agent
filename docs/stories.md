@@ -22,7 +22,7 @@
 | 004      | GetDocument tool                                  | Done        | /docs/stories/story-004-get-document.md            |
 | 005      | ApplyOps engine (append/move/update/delete)       | Done        | /docs/stories/story-005-apply-ops.md               |
 | 006      | Create tool + registry                            | To Do       | /docs/stories/story-006-create-and-registry.md     |
-| 007      | List tool                                         | To Do       | /docs/stories/story-007-list.md                    |
+| 007      | List tool                                         | Done        | /docs/stories/story-007-list.md                    |
 | 008      | Undo tool                                         | To Do       | /docs/stories/story-008-undo.md                    |
 | 009      | Git integration (commit+diff)                     | To Do       | /docs/stories/story-009-git-integration.md         |
 | 010      | Anchors & validation rules                        | To Do       | /docs/stories/story-010-anchors-validation.md      |

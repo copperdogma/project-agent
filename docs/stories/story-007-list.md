@@ -1,6 +1,6 @@
 # Story: List tool
 
-**Status**: In Progress
+**Status**: Done
 
 ---
 
@@ -15,7 +15,7 @@
 ## Acceptance Criteria
 
 - Returns titles, slugs, and paths from registry.
-- [ ] User must sign off on functionality before story can be marked complete.
+- [x] User must sign off on functionality before story can be marked complete.
 
 ## Tasks
 
