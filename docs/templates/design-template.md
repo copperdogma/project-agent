@@ -24,21 +24,29 @@ When creating the `design.md` file for a new project:
 ---
 
 ## Architecture Overview
+
 <!-- AI: Describe the overall architecture, e.g., monolithic, microservices, etc. -->
+
 [FILL IN]
 
 ## Technology Stack
+
 <!-- AI: List the technologies, frameworks, languages, etc., to be used -->
+
 - [TECHNOLOGY 1]
 - [TECHNOLOGY 2]
 - [TECHNOLOGY 3]
 
 ## Feature Implementations
+
 <!-- AI: For each key feature in requirements.md, add a subsection here -->
 
 ### Feature: [FEATURE NAME]
-**Related Requirement**: [LINK to specific requirement in requirements.md]  
+
+**Related Requirement**: [LINK to specific requirement in requirements.md]
+
 <!-- AI: Describe the implementation approach for this feature -->
+
 [FILL IN]
 
 <!-- AI: Repeat for each feature -->
@@ -60,9 +68,11 @@ Task Manager App
 ---
 
 ## Architecture Overview
+
 The app will use a monolithic architecture due to its simplicity and the small scope of the project.
 
 ## Technology Stack
+
 - Frontend: React.js for a dynamic user interface
 - Backend: Node.js with Express.js for API endpoints
 - Database: MongoDB for flexible data storage
@@ -70,10 +80,12 @@ The app will use a monolithic architecture due to its simplicity and the small s
 ## Feature Implementations
 
 ### Feature: Task Creation
+
 **Related Requirement**: [Requirement #1: Task Creation](link-to-requirements.md#req1)  
 The task creation feature will be implemented using a React form that sends a POST request to the backend API, which will then store the task in MongoDB.
 
 ### Feature: Task Status Tracking
+
 **Related Requirement**: [Requirement #2: Task Status Tracking](link-to-requirements.md#req2)  
 Task status will be managed using a state machine in the backend, with states for "to-do" and "completed." The frontend will display the current state and allow transitions.
 

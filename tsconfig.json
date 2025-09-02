@@ -46,6 +46,6 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "noImplicitAny": true,
+    "noImplicitAny": true
   }
 }

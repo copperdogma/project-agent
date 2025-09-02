@@ -22,26 +22,36 @@ When creating a new story file in the `/docs/stories` folder:
 ---
 
 ## Related Requirement
+
 <!-- AI: Link to the specific requirement in requirements.md -->
+
 [LINK to requirement]
 
 ## Alignment with Design
+
 <!-- AI: Link to the relevant section in design.md -->
+
 [LINK to design section]
 
 ## Acceptance Criteria
+
 <!-- AI: List the conditions that must be met for this story to be considered complete -->
+
 - [CRITERION 1]
 - [CRITERION 2]
 - [ ] User must sign off on functionality before story can be marked complete.
 
 ## Tasks
+
 <!-- AI: List the tasks needed to complete this story -->
+
 - [ ] [TASK 1]
 - [ ] [TASK 2]
 
 ## Notes
+
 <!-- AI: Add any additional notes or considerations -->
+
 [FILL IN]
 
 ---
@@ -59,23 +69,27 @@ Below is a sample story file for a hypothetical task manager app. Use this as a 
 ---
 
 ## Related Requirement
+
 [Requirement #1: Task Creation](link-to-requirements.md#req1)
 
 ## Alignment with Design
+
 [Design Section 2.1: Task Creation](link-to-design.md#task-creation)
 
 ## Acceptance Criteria
+
 - Users can create a new task with a title and description.
 - Tasks are saved to the database and displayed in the task list.
 
 ## Tasks
+
 - [x] Design the task creation form in React
 - [ ] Implement the backend API endpoint for task creation
 - [ ] Connect the form to the backend API
 - [ ] Test the task creation flow
 - [ ] User must sign off on functionality before story can be marked complete.
 
-
 ## Notes
+
 - Ensure that the form validates input before submission.
 - Consider adding a success message after task creation.

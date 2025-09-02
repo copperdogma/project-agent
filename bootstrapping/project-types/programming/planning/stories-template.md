@@ -24,13 +24,16 @@ When creating the `stories.md` file for a new project:
 ---
 
 ## Story List
-| Story ID | Title                | Priority    | Status    | Link                       |
-|----------|----------------------|-------------|----------------------------|
-| [001]    | [SHORT DESCRIPTION]  | [PRIORITY]  | [STATUS]  | [/docs/stories/story-001-short-description.md] |
-| [002]    | [SHORT DESCRIPTION]  | [PRIORITY]  | [STATUS]  | [/docs/stories/story-002-short-description.md] |
+
+| Story ID | Title               | Priority   | Status   | Link                                           |
+| -------- | ------------------- | ---------- | -------- | ---------------------------------------------- |
+| [001]    | [SHORT DESCRIPTION] | [PRIORITY] | [STATUS] | [/docs/stories/story-001-short-description.md] |
+| [002]    | [SHORT DESCRIPTION] | [PRIORITY] | [STATUS] | [/docs/stories/story-002-short-description.md] |
 
 ## Notes
+
 <!-- AI: Add any additional notes or considerations -->
+
 [FILL IN]
 
 ---
@@ -50,10 +53,12 @@ Task Manager App
 ---
 
 ## Story List
-| Story ID | Title                | Status    | Link                       |
-|----------|----------------------|-----------|----------------------------|
-| 001      | Implement OAuth Login| In Progress | /docs/stories/story-001-implement-oauth-login.md |
-| 002      | Design Database Schema| To Do     | /docs/stories/story-002-design-database-schema.md |
+
+| Story ID | Title                  | Status      | Link                                              |
+| -------- | ---------------------- | ----------- | ------------------------------------------------- |
+| 001      | Implement OAuth Login  | In Progress | /docs/stories/story-001-implement-oauth-login.md  |
+| 002      | Design Database Schema | To Do       | /docs/stories/story-002-design-database-schema.md |
 
 ## Notes
+
 - Story #001 is delayed due to issues with Google API rate limits.

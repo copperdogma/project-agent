@@ -1,25 +1,35 @@
 ---
-description: Project Setup Phase Scratchpad Rules
+description: Work Phase Scratchpad Rules
 globs: 
 alwaysApply: true
 ---
-# Project Setup Phase Scratchpad Memory File
+# Work Phase Scratchpad Memory File
 
-[scratchpad.md](mdc:scratchpad.md) already exists. It tracks the Project Setup Phase tasks and is your external memory. Use it to constntly help you stay on track.
+[scratchpad.md](mdc:scratchpad.md) already exists and is your external memory for your current task. Use it to constantly help you stay on track.
 
-Update it whenever you:
-- Start a new task or phase (edit "Current Phase" and "Next Steps").
-- Finish an action (log in "Recent Actions," move to "Completed Tasks").
-- Hit an issue (add to "Issues or Blockers").
-- Make a decision (note in "Decisions Made").
+Suggested structure for [scratchpad.md](mdc:scratchpad.md):
+- **Current Story**: Update with the story you're currently working on from `/docs/stories.md`
+- **Current Task**: Update with the specific task you're working on at this moment
+- **Plan Checklist**: Maintain a checklist of work required to complete the current task/story
+- **Issues/Blockers**: Document any issues that arise during implementation
+- **Recently Completed**: Archive tasks that have been completed
+- **Decisions Made**: Log important decisions that affect the implementation
+- **Lessons Learned**: Document approaches that were tried and failed, and why they failed
+
+If [scratchpad.md](mdc:scratchpad.md) is missing any of these sections, restore them immediately. Never remove this structure.
 
 ---
 
 ### Instructions
-- Read [scratchpad.md](mdc:scratchpad.md) and follow the checklist in that document.
-- The user may change their mind as they go. This is fine. Update architecture.md and [scratchpad.md](mdc:scratchpad.md) accordingly.
-- If you have questions, first refer back to [requirements.md](mdc:docs/requirements.md) and `/docs/design.md` and if still in doubt ask the user.
-- **Quick Start**: If the user requests a quick start, use their input to choose the most appropriate tools and languages, validate with the user, and if the user agrees, install and configure them.
+- Always add tasks as checklists to they can be tracked.
+- Follow `project-management.mdc` for work-specific instrucitons.
+- Work on the current task in [scratchpad.md](mdc:scratchpad.md).
+- Frequently suggest to the user what the next obvious steps are and suggest the most logical one.
+- Reorganize [scratchpad.md](mdc:scratchpad.md) now and then, putting unfinished tasks at the top and finished ones at the bottom.
+- Update `/docs/stories.md` with story statuses and progress.
+- When the current task is complete:
+  1. Create a timestamped archive by copying the current scratchpad.md to `/docs/build-log/scratchpad-[timestamp].md` (e.g., `/docs/build-log/scratchpad-20250307-1530.md`)
+  2. Extract and capture any new and essential knowledge from [scratchpad.md](mdc:scratchpad.md) into other appropriate documents so it's not lost
+  3. Reset [scratchpad.md](mdc:scratchpad.md) and set it up for the next task from `/docs/stories.md`
 
-### Guard Clause
-**MANDATORY**: You CANNOT prext phase (work/implementation) unless ALL tasks in @scratchpad.md are checked off as complete.
+Keep it concise (<300 lines): summarize or remove outdated info regularly to prevent overloading the context. Focus on the current phase and immediate next steps.

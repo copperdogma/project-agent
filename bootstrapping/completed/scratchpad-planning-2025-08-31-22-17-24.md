@@ -3,6 +3,7 @@
 **Current Phase**: MVP Requirements Gathering
 
 **MVP Checklist**
+
 - [ ] Define core problem and purpose:
   - [ ] Who are the target users?
   - [ ] What problem does this solve for them?
@@ -21,12 +22,13 @@
   - [ ] Any non-requirements details or outstanding questions in the "Non-Requirements Detail" section at the bottom
 
 **Project Type Selection**
+
 - [ ] Determine appropriate project type:
   - [ ] Review available types in `/bootstrapping/project-types/`
   - [ ] Analyze options:
-     - [ ] Programming: For software development projects
-     - [ ] Research: For research-oriented projects
-     - [ ] [Other types as available]
+    - [ ] Programming: For software development projects
+    - [ ] Research: For research-oriented projects
+    - [ ] [Other types as available]
   - [ ] Provide rationale for recommendation
 - [ ] Present options with clear descriptions
 - [ ] If user discusses implementation details prematurely:
@@ -35,18 +37,20 @@
 - [ ] Get explicit confirmation of project type choice
 
 **Ready to Build?**
+
 - When the MVP is clearly defined and project type selected, ask:
   "I think we have enough requirements for an MVP version of the project. Would you like to start building with the [selected_project_type] project type?"
 - If yes, run: `./bootstrapping/scripts/transition_to_execute.sh [project_type]`
-    - Then read the new scratchpad.mdc and scratchpad.md and follow the new instructions.
+  - Then read the new scratchpad.mdc and scratchpad.md and follow the new instructions.
 
 ## User Input
+
 Full requirements pasted into `docs/requirements.md` describing an MCP-based local server to edit Obsidian vault Markdown with deterministic ops and diffs, canonical sections, anchors, and security constraints.
 
 ## Issues or Blockers
 
-
 ## Outstanding Questions
+
 - Auth: Prefer mTLS or Bearer token for MVP? If mTLS, should we generate self-signed certs and provide a script?
 - Network scope: localhost only, or allow LAN clients? If LAN, which CIDRs are allowed?
 - Vault: Absolute path to the Obsidian vault root? Is the vault already a git repo?
@@ -72,6 +76,7 @@ Full requirements pasted into `docs/requirements.md` describing an MCP-based loc
 - Encoding: Confirm UTF-8 with LF line endings.
 
 ## Proposed Decisions (Recommendations)
+
 - Auth: Use mutual TLS for MVP (best security). Provide optional bearer token dev-mode via env toggle.
 - Network scope: Default localhost-only. Allow opt-in LAN with CIDR allowlist (env: ALLOW_CIDRS).
 - Vault path: Require absolute path via VAULT_ROOT env. If not a git repo, initialize on first run.

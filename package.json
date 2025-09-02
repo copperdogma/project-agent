@@ -11,6 +11,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
+    "start:mcp": "node dist/mcp.js",
     "lint": "eslint .",
     "format": "prettier -w .",
     "generate:certs": "node scripts/generate-dev-certs.mjs"
@@ -38,13 +39,15 @@
     "prettier": "^3.6.2",
     "selfsigned": "^3.0.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "zod": "^3.23.8"
   },
   "dependencies": {
     "dotenv": "^17.2.1",
     "fastify": "^5.5.0",
-    "fastify-rate-limit": "^5.8.0",
+    "@fastify/rate-limit": "^10.0.0",
     "pino": "^9.9.0",
-    "simple-git": "^3.28.0"
+    "simple-git": "^3.28.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
   }
 }

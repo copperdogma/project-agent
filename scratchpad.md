@@ -1,82 +1,41 @@
-# Scratchpad - Project Setup Phase
+# Scratchpad - Work Phase
 
-**Current Phase**: Project Setup
+\*\*NOTES:
 
-**NOTES**
-- Do NOT start building the actual app. That's done in the next phase.
-- Update this checklist after every step
-- If possible, run the app after every step to ensure it's working.
+- All To Do items should be added as checklists.
+- Do not check something off unless you're confident it's complete.
+- Reorganize now and then, putting unfinished tasks at the top and finished ones at the bottom.
+  \*\*
 
-**Tasks**  
-- [x] Read `/docs/architecture.md` to understand the technical requirements but don't act yet.
-- [x] Read `/bootstrapping/project-types/programming/project-setup/starter-repos.md` to get the curated list URLs.
-- [x] Visit ONLY the URLs provided in the starter-repos.md file as starting points.
-- [x] For each URL in starter-repos.md:
-   - [x] Navigate to relevant sections that match the project requirements.
-   - [x] Document the navigation path through the curated list.
-   - [x] Identify potential repositories that match the architecture requirements.
-- [x] Ensure you've explored all URLs in starter-repos.md before proceeding.
-- [x] For each identified repository, document:
-   - [x] Source URL (must be from the lists in starter-repos.md)
-   - [x] Path through curated lists
-   - [x] Features that match requirements
-   - [x] Missing features
-   - [x] Compatibility score (1-10)
-- [x] Present the top 3 repositories to the user with detailed analysis.
-- [x] If unable to find 3 suitable repositories from the URLs in starter-repos.md, report specific difficulties and request permission for broader web searches. (N/A; 3 candidates identified)
-- [x] Make a checklist in this document of what steps are needed to either a) pull and configure the chosen starter repo, or b) install and configure the chosen custom architecture.
-- [x] Evaluate your checklist vs the `/docs/stories.md` document to ensure you're not doing project work in the setup phase. If you have extra detail that's misssing from `/docs/stories.md`, add it to the individual stories when appropriate. (Aligned)
-- [x] If you pulled a starter repo, check its README file for a project overview and add the setup steps you find there to this checklist. (N/A)
-- [x] Configure development tools (e.g., ESLint, Prettier)  
-- [x] Set up version control (e.g., git init)
-- [x] Erase and rewrite the README.md file so it's perfect for this newly set up project
-- [x] Document the new project structure in `/docs/design.md`
-- [x] Double check all steps are complete before moving on to the next phase
+      ## Current Story
 
-**Transition to Next Phase**
-- Once all tasks are checked off, ask: "Are you ready to move to the Work phase?"
-- To move to the next phase, run `./bootstrapping/scripts/transition_to_execute.sh programming work`
+  Story 001b — Minimal MCP transport + tool registration (stdio)
 
-**User Input**  
-- [Log anything the user has said so far]
+## Current Task
 
-**Quick Start Assumptions**  
-- [If quick start is used, list assumptions made, e.g., "Assumed GitHub for version control."]
+Implement stdio MCP server with health/version tools
 
-**Issues or Blockers**  
-- [Log any issues]
+## Plan Checklist
 
-**Repo Exploration Findings**
-- Candidate 1: NextAuth + PSQL Base Template  
-  - Source: https://github.com/copperdogma/next-authjs-psql-base-template  
-  - Path: starter-repos.md → "Next.js + NextAuth.js + PostgreSQL Base Template"  
-  - Matches: strong lint/test scaffolding, rate-limit patterns, env management.  
-  - Missing: not MCP; web app stack; no deterministic ops or git-diff engine.  
-  - Compatibility: 6/10 (reference for practices, not runtime).
+- [ ] Create `src/mcp.ts` MCP stdio server
+- [ ] Register `server.health` and `server.version`
+- [ ] Add `start:mcp` script; install SDK
+- [ ] Smoke-test local startup
 
-- Candidate 2: Fastify (Node HTTP server)  
-  - Source: https://github.com/fastify/fastify  
-  - Path: starter-repos.md → GitHub Awesome Lists → Node.js → Fastify  
-  - Matches: HTTPS, mTLS support, rate-limiter plugins, good perf.  
-  - Missing: MCP transport, git integration, deterministic ops.  
-  - Compatibility: 8/10 (solid base for custom MCP server).
+## Issues/Blockers
 
-- Candidate 3: NestJS framework  
-  - Source: https://github.com/nestjs/nest  
-  - Path: starter-repos.md → awesome-nestjs → nest  
-  - Matches: modules for validation, rate limiting, DI.  
-  - Missing: heavier footprint; still no deterministic ops/git layer.  
-  - Compatibility: 5/10 (overkill for this service).
+- [ ] Confirm @modelcontextprotocol/sdk API shape for tool registration
 
-Recommendation: Build a minimal custom Node/TS MCP server, borrow linting/testing/rate-limit patterns from Candidate 1, and use Fastify (Candidate 2) for HTTPS/mTLS and plugin ecosystem.
+## Recently Completed
 
-**Setup Checklist (custom architecture)**
-- [x] Initialize Node+TS workspace; add eslint/prettier, tsconfig.
-- [x] Add deps: fastify, fastify-rate-limit, dotenv, simple-git, pino, selfsigned (dev).
-- [x] Implement optional TLS server; dev script to generate certs; scaffold read-only guard.
-- [ ] Implement MCP transport skeleton + tool registration.
-- [ ] Implement vault resolver + locking; configure VAULT_ROOT.
-- [ ] Implement snapshot/getDocument/applyOps/create/list/undo; git commit+diff.
-- [x] Add server.health/server.version; (read-only guard scaffolded); error model; limits to come.
-- [ ] Add audit log JSONL and rate limits.
-- [x] Update README and document structure in `docs/design.md`.
+- [ ] Story-001: MCP transport + auth shell complete
+
+## Decisions Made
+
+- [ ] Expose only server._ tools in 001b; project._ later
+
+## Lessons Learned
+
+- [ ] Keep auth checks centralized via preHandler hooks
+
+Keep this file concise (<300 lines): summarize or remove outdated info regularly to prevent overloading the context. Focus on the current phase and immediate next steps.

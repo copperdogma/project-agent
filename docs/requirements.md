@@ -1,17 +1,20 @@
 # Project Requirements
 
 **START CRITICAL NOTES -- DO NOT REMOVE**
+
 - This document focuses on WHAT the system should do and WHY, not HOW it should be implemented.
 - Keep this document formatted according to `requitements-template.md`
 - Record every single user-given requirements that get into HOW instead of WHY below in the `Non-Requirements Detail` section.
 - Ask the user if they should transition to the next phase if:
-    - If we have enought requirements for an MVP.
-    - If the user is moving past basic requirements into HOW to achieve the project goals.
+  - If we have enought requirements for an MVP.
+  - If the user is moving past basic requirements into HOW to achieve the project goals.
 - `scratchpad.mdc` will explain which script to run to transition to the next phase.
-**END CRITICAL NOTES -- DO NOT REMOVE**
+  **END CRITICAL NOTES -- DO NOT REMOVE**
+
 # **MCP: Project Agent for Obsidian (Always-LLM, Direct Editor)**
 
 ## **Goals**
+
 - Call a **local MCP server** that edits Markdown in your Obsidian vault.
 - LLM sends natural instructions; **server returns deterministic ops + diff**.
 - Prefer **Uncategorized at top** for new documents; for existing documents, **do not reorder sections**. Use Uncategorized as **fallback** when confidence < high.
@@ -20,21 +23,24 @@
 ---
 
 ## **Security**
+
 - Default to localhost (127.0.0.1). LAN access is opt-in and must use mTLS with a CIDR allowlist.
 - **Auth options (pick one):**
-    - **Mutual TLS** (recommended for production/default).
-    - **Bearer token** in MCP connection metadata (dev convenience only).
+  - **Mutual TLS** (recommended for production/default).
+  - **Bearer token** in MCP connection metadata (dev convenience only).
 - **Allowlist principal/email:** requests must include x-user-email: cam.marsollier@gmail.com.
 - Path sandboxing: vault root is fixed; deny path traversal.
-    
+
 ---
 
 ## **Vault Conventions**
 
 Suggested sections and order (non-enforced):
+
 1. Uncategorized → Tasks → Ideas → Resources → Notes → Log → Decisions
 
 Line formats:
+
 - Tasks: - [ ] <text> (YYYYMMDD) #tags ^id
 - Others: YYYYMMDD ai: <text> [#tags] ^id
 - Resources: - <title> — <url> [note] YYYYMMDD ai: [#tags] ^id
@@ -64,13 +70,12 @@ Line formats:
 
 ## **Tooling (MCP Tools)**
 
-
 ### **1)** 
 
 ### **project.snapshot**
 
-
 **Purpose:** Give the LLM enough context without sending the whole file.
+
 - **input:** { slug: string }
 - **output:**
 
@@ -92,6 +97,7 @@ Line formats:
 ### **project.getDocument**
 
 **Purpose:** Return the full Markdown document for a project.
+
 - **input:** { slug: string }
 - **output:**
 
@@ -106,13 +112,13 @@ Line formats:
   "tz": "America/Edmonton"
 }
 ```
- 
-    
+
 ### **3)** 
- 
-### **project.applyOps**  
+
+### **project.applyOps**
 
 **Purpose:** Deterministically apply LLM-planned ops and return a diff.
+
 - **input:**
 
 ```
@@ -128,16 +134,16 @@ Line formats:
   "idempotency_key": "random-uuid-123"     // optional safe-retry key
 }
 ```
- 
-- **behavior:** preserve existing section order (no reordering). Create sections if missing when referenced, never touch lines without anchors, apply per-file locking, and commit via git. 
-- **output:** { "commit": "abcd123", "summary": "+Resources(1), move(1)", "diff": "unified diff…" , "primary_anchors": ["^r1"] }
-  
 
-### **4)** 
+- **behavior:** preserve existing section order (no reordering). Create sections if missing when referenced, never touch lines without anchors, apply per-file locking, and commit via git.
+- **output:** { "commit": "abcd123", "summary": "+Resources(1), move(1)", "diff": "unified diff…" , "primary_anchors": ["^r1"] }
+
+### **4)**
 
 ### **project.create**
 
 **Purpose:** New project from scratch.
+
 - **input:**
 
 ```
@@ -148,15 +154,15 @@ Line formats:
   "Log": ["20250831 ai: Initialized project and registry. ^l0001"]
 }}
 ```
-    
-- **output:** { "path":"Projects/Storybook Agent.md", "commit":"abcd123" }
 
+- **output:** { "path":"Projects/Storybook Agent.md", "commit":"abcd123" }
 
 ### **5)**
 
 ### **project.list**
-  
+
 **Purpose:** Lookup/route.
+
 - **input:** {}
 - **output:** from projects.yaml:
 
@@ -164,24 +170,25 @@ Line formats:
 [{ "title":"Skulls", "slug":"skulls", "path":"Projects/Skulls.md" }, ...]
 ```
 
+### **6)**
 
-### **6)** 
-
-### **project.undo**  
+### **project.undo**
 
 **Purpose:** Revert by commit or op-id.
+
 - **input:** { "commit":"abcd123" }
 - **output:** { "revert_commit":"beef456", "diff":"..." }
-    
 
-### **7)** 
+### **7)**
 
 ### **project.previewPlan**
+
 ### **8)**
 
 ### **server.health**
 
 **Purpose:** Operational readiness and uptime.
+
 - **input:** {}
 - **output:** { "status":"ok", "uptime_s":12345 }
 
@@ -190,6 +197,7 @@ Line formats:
 ### **server.version**
 
 **Purpose:** Versioning and compatibility.
+
 - **input:** {}
 - **output:** { "app":"project-agent", "version":"0.1.0", "schema":"2025-09-01" }
 
@@ -198,30 +206,28 @@ Line formats:
 ### **project.search** (post-MVP)
 
 **Purpose:** Find anchors/sections/lines by query without fetching the full document.
+
 - **input:** { "slug":"skulls", "query":"MG996R", "scope":"all|section", "section?":"Notes" }
 - **output:** { "matches":[ {"section":"Notes","anchor":"^mg996t","excerpt":"..."} ] }
-
 
 ###  **(optional)**
 
 **Purpose:** Dry-run validation of ops without writing.
+
 - **input:** { "slug":"skulls", "ops":[...]}
 - **output:** { "ok":true, "would_change": true, "notes":[] }
-    
+
 ---
 
 ## **LLM Contract (inside your ChatGPT "Project" system prompt)**
 
 - Always call:
-    1. project.snapshot(slug). If full context is needed, call project.getDocument(slug).
-    2. Produce **JSON ops** plan (append/move/update/delete/create_project) using the snapshot.
-    3. Call project.applyOps (or project.create) and return the **diff/summary**.
-    
+  1. project.snapshot(slug). If full context is needed, call project.getDocument(slug).
+  2. Produce **JSON ops** plan (append/move/update/delete/create_project) using the snapshot.
+  3. Call project.applyOps (or project.create) and return the **diff/summary**.
 - If content is ambiguous/low-confidence, **route to Uncategorized** (top).
-    
 - Every added/updated line must include date prefix and a unique anchor ^id (6–8 base36).
-    (Server will suffix -b if collision.)
-    
+  (Server will suffix -b if collision.)
 - Avoid duplicates: if URL/text already exists (via anchors_index / tail scan), prefer a dedup (no write).
 
 ### Error Model

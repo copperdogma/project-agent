@@ -24,18 +24,24 @@ When creating the `architecture.md` file for a new project:
 ---
 
 ## Architectural Decisions
+
 <!-- AI: List the key architectural choices, such as stacks, libraries, databases, etc. -->
+
 - [DECISION 1]
 - [DECISION 2]
 
 ## Setup Progress
+
 <!-- AI: Use this section to log the setup steps, marking them as [ ] to do or [x] done -->
+
 - [ ] Install [LIBRARY 1]
 - [ ] Configure [DATABASE]
 - [ ] Set up [SERVICE]
 
 ## Notes
+
 <!-- AI: Add any additional notes or considerations -->
+
 [FILL IN]
 
 ---
@@ -55,15 +61,18 @@ Task Manager App
 ---
 
 ## Architectural Decisions
+
 - Use React.js for the frontend to leverage its component-based architecture.
 - Use Node.js with Express.js for the backend to handle API requests.
 - Use MongoDB as the database for its flexibility with unstructured data.
 
 ## Setup Progress
+
 - [x] Install React.js and set up the frontend project structure
 - [ ] Install Node.js and Express.js for the backend
 - [ ] Set up MongoDB and connect it to the backend
 
 ## Notes
+
 - Consider using Mongoose for MongoDB schema management.
 - Ensure that the backend API is RESTful and follows best practices.

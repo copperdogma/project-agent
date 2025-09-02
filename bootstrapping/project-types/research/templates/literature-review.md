@@ -7,13 +7,16 @@
 ---
 
 ## Objectives
+
 - [OBJECTIVE 1]
 - [OBJECTIVE 2]
 
 ## Sources
+
 - [SOURCE 1]
 - [SOURCE 2]
 
 ## Key Questions
+
 - [QUESTION 1]
 - [QUESTION 2]
