@@ -18,13 +18,14 @@
 - Denies traversal outside vault.
 - Records line ending style per file.
 - [ ] User must sign off on functionality before story can be marked complete.
+- [ ] Unit tests with malicious paths.
 
 ## Tasks
 
 - [x] Implement safePathResolve(root, relativePath).
 - [x] Implement readFile/writeFile with lockfile.
 - [x] Detect/store line ending style.
-- [ ] Unit tests with malicious paths.
+- [x] Unit tests with malicious paths.
 
 ## Notes
 

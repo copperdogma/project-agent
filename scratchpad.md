@@ -9,37 +9,35 @@
 
       ## Current Story
 
-  Story 002 — Vault resolver + safe path sandbox
+  Story 003 — Snapshot tool
 
 ## Current Task
 
-Implement vault resolver, locking, and line-ending helpers
+Sketch and implement snapshot builder (sections, toc, tails, anchors, commit)
 
 ## Plan Checklist
 
-- [x] Create `src/vault.ts` with `safePathResolve`
-- [x] Add read/write with lockfile
-- [x] Add line ending detection and normalization helpers
-- [ ] Wire `VAULT_ROOT` configuration validation and docs
-- [ ] Add unit tests for traversal attempts and normal cases
-- [ ] Integrate into future tools (snapshot, getDocument, applyOps)
+- [ ] Create `src/snapshot.ts` with API `buildSnapshot(slug)`
+- [ ] Implement section parsing, anchor extraction
+- [ ] Build `toc` and `per_section_tail` (default 10)
+- [ ] Integrate with git to get `current_commit`
+- [ ] Wire date/tz to return `date_local` and `tz`
+- [ ] Add tests with example vault file
 
 ## Issues/Blockers
 
-- [ ] Decide on test framework (vitest/jest) or lightweight node script
+- [ ] Choose tail size via env `SNAPSHOT_TAIL` with default 10
 
 ## Recently Completed
 
-- [x] Story-001b: Minimal MCP transport + tool registration (stdio)
-- [x] Story-001: MCP transport + auth shell complete
+- [x] Story 002 — Vault resolver + safe path sandbox
 
 ## Decisions Made
 
-- [x] Use per-file lockfiles with `.lock` suffix
-- [x] Preserve detected line endings on write when provided
+- [ ] Preserve existing section order strictly
 
 ## Lessons Learned
 
-- [ ] Keep auth checks centralized via preHandler hooks
+- [ ] Avoid reading whole files when not needed; prefer tails
 
 Keep this file concise (<300 lines): summarize or remove outdated info regularly to prevent overloading the context. Focus on the current phase and immediate next steps.

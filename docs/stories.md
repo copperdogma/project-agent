@@ -17,7 +17,7 @@
 | -------- | ------------------------------------------------- | ----------- | -------------------------------------------------- |
 | 001      | Implement MCP transport + auth shell              | Done        | /docs/stories/story-001-transport-auth.md          |
 | 001b     | Minimal MCP transport + tool registration (stdio) | Done        | /docs/stories/story-001b-mcp-minimal.md            |
-| 002      | Vault resolver + safe path sandbox                | In Progress | /docs/stories/story-002-vault-resolver.md          |
+| 002      | Vault resolver + safe path sandbox                | Done        | /docs/stories/story-002-vault-resolver.md          |
 | 003      | Snapshot tool                                     | To Do       | /docs/stories/story-003-snapshot.md                |
 | 004      | GetDocument tool                                  | To Do       | /docs/stories/story-004-get-document.md            |
 | 005      | ApplyOps engine (append/move/update/delete)       | To Do       | /docs/stories/story-005-apply-ops.md               |
