@@ -39,11 +39,25 @@ export function listProjects(): ProjectEntry[] {
       const lines = raw.split(/\n|\r\n|\r/);
       let current: Partial<ProjectEntry> | null = null;
       for (const line of lines) {
-        if (line.trim().startsWith("- ")) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("- ")) {
           if (current && current.title && current.slug && current.path) {
             items.push(current as ProjectEntry);
           }
           current = {};
+          // Support inline form: "- title: X" on the same line
+          const inline = trimmed.slice(2); // after "- "
+          const mInline = /^(title|slug|path):\s*(.+)\s*$/.exec(inline);
+          if (mInline) {
+            const keyRaw = (mInline[1] ?? "").trim();
+            let val = (mInline[2] ?? "").trim();
+            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+              val = val.slice(1, -1);
+            }
+            if (keyRaw === "title" || keyRaw === "slug" || keyRaw === "path") {
+              (current as any)[keyRaw] = val;
+            }
+          }
           continue;
         }
         const m = /^(\s*)(title|slug|path):\s*(.+)\s*$/.exec(line);
