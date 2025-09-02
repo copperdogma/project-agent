@@ -24,3 +24,9 @@ __pycache__/
 .env
 dist
 .DS_Store
+# Ignore development TLS certificates/keys
+certs/
+
+# Optional: local env files
+.env
+.env.*
