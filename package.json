@@ -13,6 +13,7 @@
     "test:getDocument": "npm run build && node scripts/test-get-document.mjs",
     "test:list": "npm run build && node scripts/test-list.mjs",
     "test:register": "npm run build && node scripts/test-register.mjs",
+    "test:create": "npm run build && node scripts/test-create.mjs",
     "test:integration": "npm run build && node scripts/test-integration-list-fetch.mjs",
     "test:applyOps": "npm run build && node scripts/test-apply-ops.mjs",
     "test:integration:applyOps": "npm run build && node scripts/test-integration-apply-ops.mjs",

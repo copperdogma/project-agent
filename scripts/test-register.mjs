@@ -10,6 +10,7 @@ async function run() {
     "project_snapshot",
     "project_get_document",
     "project_apply_ops",
+    "project_create",
   ];
 
   function extractToolNames(obj) {

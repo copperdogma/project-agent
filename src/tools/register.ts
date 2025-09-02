@@ -4,6 +4,7 @@ import { buildSnapshot } from "../snapshot.js";
 import { getDocument } from "../document.js";
 import { listProjects } from "../list.js";
 import { applyOps } from "../apply.js";
+import { createProject } from "../create.js";
 
 export function registerProjectTools(mcpServer: McpServer): void {
   mcpServer.registerTool(
@@ -73,6 +74,30 @@ export function registerProjectTools(mcpServer: McpServer): void {
         expected_commit: args?.expected_commit ?? null,
         idempotency_key: args?.idempotency_key ?? null,
       });
+      return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+    },
+  );
+
+  mcpServer.registerTool(
+    "project_create",
+    {
+      description:
+        "Create a new project document under Projects/<Title>.md and add it to registry.\n" +
+        "Slug: optional; auto-generated from title if omitted (lowercase, dashes).\n" +
+        "router_email: optional metadata for routing/ownership; stored in frontmatter if provided.\n" +
+        "Validation: title is required; filename is sanitized (replaces unsafe chars). Unique slug enforced via registry.\n" +
+        "Template: creates frontmatter (title, slug, router_email?) and starter sections: Uncategorized, Notes, Resources.",
+      inputSchema: {
+        title: z.string(),
+        slug: z.string().optional(),
+        router_email: z.string().optional(),
+      },
+    },
+    async (args: any) => {
+      const input: any = { title: String(args?.title || "") };
+      if (args?.slug !== undefined) input.slug = String(args.slug);
+      if (args?.router_email !== undefined) input.router_email = String(args.router_email);
+      const payload = createProject(input);
       return { content: [{ type: "text", text: JSON.stringify(payload) }] };
     },
   );
