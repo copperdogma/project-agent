@@ -6,6 +6,7 @@ import { listProjects } from "../list.js";
 import { applyOps } from "../apply.js";
 import { createProject } from "../create.js";
 import { undoCommit } from "../undo.js";
+import { errorFromException, makeError } from "../errors.js";
 
 export function registerProjectTools(mcpServer: McpServer): void {
   mcpServer.registerTool(
@@ -17,9 +18,13 @@ export function registerProjectTools(mcpServer: McpServer): void {
       inputSchema: { slug: z.string() },
     },
     async (args: any) => {
-      const slug = String(args?.slug || "");
-      const payload = await buildSnapshot(slug);
-      return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      try {
+        const slug = String(args?.slug || "");
+        const payload = await buildSnapshot(slug);
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
     },
   );
 
@@ -31,9 +36,13 @@ export function registerProjectTools(mcpServer: McpServer): void {
       inputSchema: { slug: z.string() },
     },
     async (args: any) => {
-      const slug = String(args?.slug || "");
-      const payload = await getDocument(slug);
-      return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      try {
+        const slug = String(args?.slug || "");
+        const payload = await getDocument(slug);
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
     },
   );
 
@@ -41,8 +50,12 @@ export function registerProjectTools(mcpServer: McpServer): void {
     "project_list",
     { description: "List available projects (title, slug, path). Sorted by title; slugs are unique.", inputSchema: {} },
     async () => {
-      const payload = listProjects();
-      return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      try {
+        const payload = listProjects();
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
     },
   );
 
@@ -73,13 +86,21 @@ export function registerProjectTools(mcpServer: McpServer): void {
       },
     },
     async (args: any) => {
-      const payload = await applyOps({
-        slug: String(args?.slug || ""),
-        ops: Array.isArray(args?.ops) ? (args.ops as any[]) : [],
-        expected_commit: args?.expected_commit ?? null,
-        idempotency_key: args?.idempotency_key ?? null,
-      });
-      return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      try {
+        const readonly = String(process.env.READONLY || "false").toLowerCase() === "true";
+        if (readonly) {
+          return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
+        }
+        const payload = await applyOps({
+          slug: String(args?.slug || ""),
+          ops: Array.isArray(args?.ops) ? (args.ops as any[]) : [],
+          expected_commit: args?.expected_commit ?? null,
+          idempotency_key: args?.idempotency_key ?? null,
+        });
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
     },
   );
 
@@ -100,11 +121,19 @@ export function registerProjectTools(mcpServer: McpServer): void {
       },
     },
     async (args: any) => {
-      const input: any = { title: String(args?.title || "") };
-      if (args?.slug !== undefined) input.slug = String(args.slug);
-      if (args?.router_email !== undefined) input.router_email = String(args.router_email);
-      const payload = await createProject(input);
-      return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      try {
+        const readonly = String(process.env.READONLY || "false").toLowerCase() === "true";
+        if (readonly) {
+          return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
+        }
+        const input: any = { title: String(args?.title || "") };
+        if (args?.slug !== undefined) input.slug = String(args.slug);
+        if (args?.router_email !== undefined) input.router_email = String(args.router_email);
+        const payload = await createProject(input);
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
     },
   );
 
@@ -123,8 +152,16 @@ export function registerProjectTools(mcpServer: McpServer): void {
       inputSchema: { commit: z.string() },
     },
     async (args: any) => {
-      const payload = await undoCommit({ commit: String(args?.commit || "") });
-      return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      try {
+        const readonly = String(process.env.READONLY || "false").toLowerCase() === "true";
+        if (readonly) {
+          return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
+        }
+        const payload = await undoCommit({ commit: String(args?.commit || "") });
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
     },
   );
 
