@@ -7,6 +7,8 @@ import { applyOps } from "../apply.js";
 import { createProject } from "../create.js";
 import { undoCommit } from "../undo.js";
 import { errorFromException, makeError } from "../errors.js";
+import { writeAudit } from "../audit.js";
+import { allow as rateAllow } from "../rate.js";
 
 export function registerProjectTools(mcpServer: McpServer): void {
   mcpServer.registerTool(
@@ -91,12 +93,22 @@ export function registerProjectTools(mcpServer: McpServer): void {
         if (readonly) {
           return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
         }
+        // Rate limiting by email:slug if provided via env override; otherwise just slug
+        const email = String(process.env.EMAIL_OVERRIDE || "anonymous");
+        const key = `${email}:${String(args?.slug || "")}`;
+        const cap = Number(process.env.RATE_LIMIT_WRITE_MAX || 20);
+        const windowSec = Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60);
+        if (!rateAllow(key, cap, windowSec)) {
+          return { content: [{ type: "text", text: JSON.stringify(makeError("RATE_LIMITED", "Write rate limit exceeded", { key })) }] };
+        }
         const payload = await applyOps({
           slug: String(args?.slug || ""),
           ops: Array.isArray(args?.ops) ? (args.ops as any[]) : [],
           expected_commit: args?.expected_commit ?? null,
           idempotency_key: args?.idempotency_key ?? null,
         });
+        // Audit
+        writeAudit({ ts: new Date().toISOString(), email, tool: "project_apply_ops", slug: String(args?.slug || ""), summary: payload.summary, commit: payload.commit });
         return { content: [{ type: "text", text: JSON.stringify(payload) }] };
       } catch (err) {
         return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
@@ -126,10 +138,18 @@ export function registerProjectTools(mcpServer: McpServer): void {
         if (readonly) {
           return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
         }
+        const email = String(process.env.EMAIL_OVERRIDE || "anonymous");
+        const key = `${email}:create`;
+        const cap = Number(process.env.RATE_LIMIT_WRITE_MAX || 20);
+        const windowSec = Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60);
+        if (!rateAllow(key, cap, windowSec)) {
+          return { content: [{ type: "text", text: JSON.stringify(makeError("RATE_LIMITED", "Write rate limit exceeded", { key })) }] };
+        }
         const input: any = { title: String(args?.title || "") };
         if (args?.slug !== undefined) input.slug = String(args.slug);
         if (args?.router_email !== undefined) input.router_email = String(args.router_email);
         const payload = await createProject(input);
+        writeAudit({ ts: new Date().toISOString(), email, tool: "project_create", slug: payload?.slug || input?.slug, summary: ["create"], commit: null });
         return { content: [{ type: "text", text: JSON.stringify(payload) }] };
       } catch (err) {
         return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
@@ -157,7 +177,15 @@ export function registerProjectTools(mcpServer: McpServer): void {
         if (readonly) {
           return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
         }
+        const email = String(process.env.EMAIL_OVERRIDE || "anonymous");
+        const key = `${email}:undo`;
+        const cap = Number(process.env.RATE_LIMIT_WRITE_MAX || 20);
+        const windowSec = Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60);
+        if (!rateAllow(key, cap, windowSec)) {
+          return { content: [{ type: "text", text: JSON.stringify(makeError("RATE_LIMITED", "Write rate limit exceeded", { key })) }] };
+        }
         const payload = await undoCommit({ commit: String(args?.commit || "") });
+        writeAudit({ ts: new Date().toISOString(), email, tool: "project_undo", summary: ["undo"], commit: payload?.revert_commit ?? null });
         return { content: [{ type: "text", text: JSON.stringify(payload) }] };
       } catch (err) {
         return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };

@@ -51,6 +51,9 @@ export function errorFromException(err: unknown): StandardError {
   if (upper.startsWith("VALIDATION_ERROR")) {
     return makeError("VALIDATION_ERROR", message, {});
   }
+  if (upper.startsWith("MISSING_SECTION")) {
+    return makeError("VALIDATION_ERROR", message, {});
+  }
   if (upper.startsWith("CONFLICT_EXPECTED_COMMIT")) {
     return makeError("CONFLICT", message, {});
   }
