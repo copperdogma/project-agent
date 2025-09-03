@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { simpleGit } from "simple-git";
-import { getVaultRoot, readFileSafely } from "./vault.js";
+import { getVaultRoot, readFileSafely, findGitRoot } from "./vault.js";
 import { deriveSlugFromTitle } from "./slug.js";
 
 function parseFrontmatter(raw: string): { frontmatter: Record<string, string>; contentStart: number } {
@@ -58,8 +58,9 @@ function findFileBySlug(slug: string, vaultRoot: string): string | null {
 
 async function readCurrentCommit(vaultRoot: string): Promise<string | null> {
   try {
-    if (!fs.existsSync(path.join(vaultRoot, ".git"))) return null;
-    const git = simpleGit({ baseDir: vaultRoot });
+    const repoRoot = findGitRoot(vaultRoot) || vaultRoot;
+    if (!fs.existsSync(path.join(repoRoot, ".git"))) return null;
+    const git = simpleGit({ baseDir: repoRoot });
     const rev = await git.revparse(["HEAD"]);
     return (rev || "").trim() || null;
   } catch {

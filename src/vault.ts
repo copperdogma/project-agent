@@ -113,3 +113,22 @@ export function writeFileSafely(relativePath: string, data: string, preserve?: L
     releaseLock(absolutePath);
   }
 }
+
+/**
+ * Walk upward from start directory to find a .git directory. Returns the repo root or null.
+ */
+export function findGitRoot(startDir: string): string | null {
+  let current = path.resolve(startDir);
+  try {
+    while (true) {
+      const candidate = path.join(current, ".git");
+      if (fs.existsSync(candidate)) return current;
+      const parent = path.dirname(current);
+      if (parent === current) break;
+      current = parent;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}

@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { simpleGit } from "simple-git";
-import { getVaultRoot, readFileSafely, writeFileSafely } from "./vault.js";
+import { getVaultRoot, readFileSafely, writeFileSafely, findGitRoot } from "./vault.js";
 
 function parseFrontmatter(raw: string): { contentStart: number } {
   const lines = raw.replace(/^\uFEFF/, "").split(/\n|\r\n|\r/);
@@ -127,27 +127,52 @@ function readCurrentCommit(vaultRoot: string): Promise<string | null> {
   }
 }
 
-async function gitCommitAndDiff(vaultRoot: string, relativeFilePath: string, message: string): Promise<{ commit: string | null; diff: string }> {
+async function waitForGitIndexLockClear(repoRoot: string, timeoutMs: number = 5000): Promise<boolean> {
+  const lockPath = path.join(repoRoot, ".git", "index.lock");
+  const started = Date.now();
+  while (fs.existsSync(lockPath) && Date.now() - started < timeoutMs) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return !fs.existsSync(lockPath);
+}
+
+async function gitCommitAndDiff(repoRoot: string, filePathRelativeToRepo: string, message: string): Promise<{ commit: string | null; diff: string }> {
   try {
-    if (!fs.existsSync(path.join(vaultRoot, ".git"))) {
+    if (!fs.existsSync(path.join(repoRoot, ".git"))) {
+      // eslint-disable-next-line no-console
+      console.warn("gitCommitAndDiff: no .git found", { repoRoot });
       return { commit: null, diff: "" };
     }
-    const git = simpleGit({ baseDir: vaultRoot });
-    await git.add([relativeFilePath]);
-    const commitRes = await git.commit(message);
+    const git = simpleGit({ baseDir: repoRoot });
+    await waitForGitIndexLockClear(repoRoot, 5000);
+    await git.add([filePathRelativeToRepo]);
+    let commitRes;
+    try {
+      commitRes = await git.commit(message);
+    } catch (err: any) {
+      if (String(err?.message || err).includes("index.lock")) {
+        await waitForGitIndexLockClear(repoRoot, 3000);
+        commitRes = await git.commit(message);
+      } else {
+        throw err;
+      }
+    }
     const commit = String((commitRes as any).commit || "");
     let diff = "";
     if (commit) {
       try {
-        // Show only this commit's changes for the file
-        diff = await git.diff(["-U0", `${commit}^!`, "--", relativeFilePath]);
+        diff = await git.diff(["-U0", `${commit}^!`, "--", filePathRelativeToRepo]);
       } catch {
         // Fallback: full diff for the file
-        diff = await git.show(["-U0", commit, "--", relativeFilePath]);
+        diff = await git.show(["-U0", commit, "--", filePathRelativeToRepo]);
       }
     }
+    // eslint-disable-next-line no-console
+    console.info("gitCommitAndDiff: committed", { repoRoot, filePathRelativeToRepo, commit });
     return { commit, diff };
-  } catch {
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn("gitCommitAndDiff: commit failed", { err: (err as any)?.message });
     return { commit: null, diff: "" };
   }
 }
@@ -230,7 +255,9 @@ export async function applyOps(input: ApplyOpsInput): Promise<ApplyOpsResult> {
   const summary: string[] = [];
   const createdAnchors: string[] = [];
 
-  const currentCommitBefore = await readCurrentCommit(vaultRoot);
+  const repoRoot = findGitRoot(vaultRoot) || vaultRoot;
+  const filePathRelativeToRepo = path.relative(repoRoot, fullPath);
+  const currentCommitBefore = await readCurrentCommit(repoRoot);
   if (typeof expected_commit === "string" && expected_commit && expected_commit !== currentCommitBefore) {
     throw new Error("CONFLICT_EXPECTED_COMMIT: repository moved since expected_commit");
   }
@@ -340,13 +367,13 @@ export async function applyOps(input: ApplyOpsInput): Promise<ApplyOpsResult> {
   }
 
   const commitMsg = `applyOps(${slug}): ${summary.join(", ")}${idempotency_key ? `\n\nIdempotency-Key: ${idempotency_key}` : ""}`;
-  const { commit, diff } = await gitCommitAndDiff(vaultRoot, relPath, commitMsg);
+  const { commit, diff } = await gitCommitAndDiff(repoRoot, filePathRelativeToRepo, commitMsg);
 
   if (idempotency_key) {
     writeStoredCommitForKey(vaultRoot, idempotency_key, commit);
   }
 
-  const currentCommitAfter = await readCurrentCommit(vaultRoot);
+  const currentCommitAfter = await readCurrentCommit(repoRoot);
   return {
     commit,
     diff,

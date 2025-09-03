@@ -1,6 +1,6 @@
 # Story: Undo tool
 
-**Status**: In Progress
+**Status**: Done
 
 ---
 
@@ -15,12 +15,12 @@
 ## Acceptance Criteria
 
 - Reverts by commit and returns revert_commit + diff.
-- [ ] User must sign off on functionality before story can be marked complete.
+- [x] User must sign off on functionality before story can be marked complete.
 
 ## Tasks
 
-- [ ] Implement revert via git.
-- [ ] Validate commit exists and belongs to the vault repo.
+- [x] Implement revert via git.
+- [x] Validate commit exists and belongs to the vault repo.
 
 ## Notes
 

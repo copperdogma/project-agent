@@ -56,7 +56,8 @@ export function registerProjectTools(mcpServer: McpServer): void {
         "Sections: Markdown headings (# .. ######). Ops target section bodies; section order is preserved.\n" +
         "Append: appends to tail of an EXISTING section only (MISSING_SECTION if unknown). Section creation is not yet supported.\n" +
         "Update/Delete/Move: locate lines by anchor, preserve or move the anchored line accordingly.\n" +
-        "Dedup: append skips if exact text or normalized URL already exists in target section.",
+        "Dedup: append skips if exact text or normalized URL already exists in target section.\n" +
+        "Git: returns a real commit SHA when commit succeeds; returns commit:null when the repo is unavailable/busy (e.g., index.lock). The server retries briefly if an index.lock is present.",
       inputSchema: {
         slug: z.string(),
         ops: z.array(

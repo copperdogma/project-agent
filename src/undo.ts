@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { simpleGit } from "simple-git";
-import { getVaultRoot } from "./vault.js";
+import { getVaultRoot, findGitRoot } from "./vault.js";
 
 export interface UndoInput {
   commit: string;
@@ -13,7 +13,8 @@ export interface UndoResult {
 }
 
 async function ensureGitRepo(vaultRoot: string): Promise<void> {
-  const gitDir = path.join(vaultRoot, ".git");
+  const repoRoot = findGitRoot(vaultRoot) || vaultRoot;
+  const gitDir = path.join(repoRoot, ".git");
   if (!fs.existsSync(gitDir)) throw new Error("NOT_A_REPO: vault is not a git repository");
 }
 
@@ -49,7 +50,8 @@ export async function undoCommit(input: UndoInput): Promise<UndoResult> {
   const { commit } = input;
   const vaultRoot = getVaultRoot();
   await ensureGitRepo(vaultRoot);
-  const git = simpleGit({ baseDir: vaultRoot });
+  const repoRoot = findGitRoot(vaultRoot) || vaultRoot;
+  const git = simpleGit({ baseDir: repoRoot });
 
   // Validate commit exists in this repo
   await verifyCommitExists(git, commit);

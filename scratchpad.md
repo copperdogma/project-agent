@@ -9,17 +9,17 @@
 
       ## Current Story
 
-  Story 008 — Undo tool
+  Story 009 — Git integration (commit + diff)
 
 ## Current Task
 
-Implement undo via git revert with revert_commit + diff
+Harden commit/diff behavior; ensure robust diffs and commit summaries
 
 ## Plan Checklist
 
-- [ ] Register MCP tool `project_undo`
-- [ ] Implement git revert validation and execution
-- [ ] Unit and integration tests
+- [ ] Ensure consistent commit author/message; summarize ops
+- [ ] Validate diffs include file paths and hunks
+- [ ] Add tests around large and multi-file changes
 
 ## Issues/Blockers
 

@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { simpleGit } from "simple-git";
-import { getVaultRoot } from "./vault.js";
+import { getVaultRoot, findGitRoot } from "./vault.js";
 import { deriveSlugFromTitle } from "./slug.js";
 
 export interface SnapshotPayload {
@@ -138,8 +138,9 @@ function tailsFromSections(sections: Record<string, string[]>, tail: number): Re
 
 async function readCurrentCommit(vaultRoot: string): Promise<string | null> {
   try {
-    if (!fs.existsSync(path.join(vaultRoot, ".git"))) return null;
-    const git = simpleGit({ baseDir: vaultRoot });
+    const repoRoot = findGitRoot(vaultRoot) || vaultRoot;
+    if (!fs.existsSync(path.join(repoRoot, ".git"))) return null;
+    const git = simpleGit({ baseDir: repoRoot });
     const rev = await git.revparse(["HEAD"]);
     return (rev || "").trim() || null;
   } catch {
