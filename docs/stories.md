@@ -27,7 +27,7 @@
 | 009      | Git integration (commit+diff)                     | Done        | /docs/stories/story-009-git-integration.md         |
 | 010      | Anchors & validation rules                        | In Progress | /docs/stories/story-010-anchors-validation.md      |
 | 011      | Concurrency & idempotency                         | In Progress | /docs/stories/story-011-concurrency-idempotency.md |
-| 012      | Auditing + rate limiting                          | In Progress | /docs/stories/story-012-audit-rate-limit.md        |
+| 012      | Auditing + rate limiting                          | Done        | /docs/stories/story-012-audit-rate-limit.md        |
 | 013      | Health & version tools                            | In Progress | /docs/stories/story-013-health-version.md          |
 | 014      | Formatting invariants (dates, line endings)       | In Progress | /docs/stories/story-014-formatting.md              |
 | 015      | Post-MVP: PreviewPlan + Search                    | To Do       | /docs/stories/story-015-post-mvp.md                |

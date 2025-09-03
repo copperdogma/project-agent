@@ -1,6 +1,6 @@
 # Story: Auditing + rate limiting
 
-**Status**: In Progress
+**Status**: Done
 
 ---
 
@@ -16,16 +16,17 @@
 
 - JSONL audit entries written on every write.
 - Rate limit enforced per email and per slug with configurable limits.
-- [ ] User must sign off on functionality before story can be marked complete.
+- [x] User must sign off on functionality before story can be marked complete.
 
 ## Tasks
 
-- [ ] Implement audit writer to `.project-agent/logs/audit.jsonl`.
-- [ ] Implement in-memory token bucket for write ops keyed by `email:slug`.
-- [ ] Expose limits via env vars and document.
-- [ ] Tests for auditing and throttling behaviors.
+- [x] Implement audit writer to `.project-agent/logs/audit.jsonl`.
+- [x] Implement in-memory token bucket for write ops keyed by `email:slug`.
+- [x] Expose limits via env vars and document.
+- [x] Tests for auditing and throttling behaviors.
 
 ## Notes
 
-- Basic per-IP rate limiting exists via Fastify; evolve to per-email and per-slug.
-- Ensure audit writes are robust and non-blocking.
+- Implemented `src/audit.ts` and wired into write tools; file at `.project-agent/logs/audit.jsonl`.
+- Implemented `src/rate.ts` and applied per `EMAIL_OVERRIDE:slug` with `RATE_LIMIT_WRITE_MAX`, `RATE_LIMIT_WRITE_WINDOW_S`.
+- Tests: `scripts/test-audit-rate.mjs` passed.
