@@ -27,3 +27,4 @@
 ## Notes
 
 - Consider semantic search later; start with exact/regex.
+- No `project_preview_plan` or `project_search` tools exist yet; retain post-MVP scope.

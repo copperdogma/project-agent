@@ -1,6 +1,6 @@
 # Story: Health & version tools
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -20,10 +20,12 @@
 
 ## Tasks
 
-- [ ] Implement uptime tracker.
-- [ ] Expose both tools via MCP.
+- [x] Implement uptime tracker.
+- [x] Expose both tools via MCP and SSE servers (underscore names).
 - [ ] Tests for outputs.
 
 ## Notes
 
-- Include semantic version sourced from package.json.
+- Tools registered as `server_health` and `server_version` in both stdio and SSE servers.
+- Version sourced from package.json when available; fallback defaults retained.
+- Add unit/integration tests before marking Done.

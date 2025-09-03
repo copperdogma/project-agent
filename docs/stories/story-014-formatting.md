@@ -1,6 +1,6 @@
 # Story: Formatting invariants (dates, line endings)
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -20,10 +20,10 @@
 
 ## Tasks
 
-- [ ] Implement date formatting helper.
-- [ ] Detect and preserve EOL per-file.
-- [ ] Tests covering mixed EOL files.
+- [x] Implement date formatting helper and enforce in apply/update.
+- [x] Detect and preserve EOL per-file via `writeFileSafely`.
+- [ ] Tests covering mixed EOL files and long lines.
 
 ## Notes
 
-- Snapshot records line ending style for reference.
+- Date stamping and EOL preservation exist; rigorous tests pending.

@@ -1,6 +1,6 @@
 # Story: Auditing + rate limiting
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -20,10 +20,12 @@
 
 ## Tasks
 
-- [ ] Implement audit writer to .project-agent/logs/audit.jsonl.
-- [ ] Implement in-memory token bucket for write ops.
-- [ ] Configurable via env variables.
+- [ ] Implement audit writer to `.project-agent/logs/audit.jsonl`.
+- [ ] Implement in-memory token bucket for write ops keyed by `email:slug`.
+- [ ] Expose limits via env vars and document.
+- [ ] Tests for auditing and throttling behaviors.
 
 ## Notes
 
+- Basic per-IP rate limiting exists via Fastify; evolve to per-email and per-slug.
 - Ensure audit writes are robust and non-blocking.

@@ -1,6 +1,6 @@
 # Story: Payload limits & validation
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -23,7 +23,8 @@
 - [ ] Implement size checks with standardized error PAYLOAD_TOO_LARGE.
 - [ ] Enforce max ops per call.
 - [ ] Implement line-length checks.
+- [ ] Document limits in README and return actionable details.
 
 ## Notes
 
-- Return actionable messages in details.
+- Wire to environment variables where appropriate with safe defaults.

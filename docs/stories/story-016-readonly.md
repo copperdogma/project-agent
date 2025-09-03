@@ -1,6 +1,6 @@
 # Story: Read-only mode
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -19,10 +19,12 @@
 
 ## Tasks
 
-- [ ] Add env flag and guard in write paths.
+- [x] Add env flag and HTTP guard for non-GET requests.
+- [ ] Add MCP tool-level guards for write tools (apply/create/undo).
 - [ ] Return standardized error object with code READ_ONLY.
 - [ ] Tests for read-only enforcement.
 
 ## Notes
 
+- HTTP layer blocks non-GET; ensure MCP handlers return proper error objects.
 - Ensure health/version still work.

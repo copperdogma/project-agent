@@ -1,6 +1,6 @@
 # Story: Standardized error model
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -21,9 +21,10 @@
 ## Tasks
 
 - [ ] Define error helpers and types.
-- [ ] Replace ad-hoc errors in tool handlers.
-- [ ] Tests verifying shape and codes.
+- [ ] Replace ad-hoc errors and string exceptions in tool handlers.
+- [ ] Tests verifying shape and codes across tools.
 
 ## Notes
 
+- Some endpoints return shaped errors already (READ_ONLY via HTTP). Harmonize MCP tool responses.
 - Include hints in details when safe.

@@ -1,6 +1,6 @@
 # Story: Anchors & validation rules
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -20,10 +20,12 @@
 
 ## Tasks
 
-- [ ] Implement anchor generator and collision handling.
-- [ ] Implement validators for Tasks/Resources/Others.
-- [ ] Unit tests covering edge cases.
+- [x] Implement anchor generator and collision handling (-b on collision).
+- [x] Add dedup normalization for URLs/text.
+- [ ] Implement validators for Tasks/Resources/Others with soft warnings.
+- [ ] Unit tests covering edge cases (collision, invalid dates, bad section formats).
 
 ## Notes
 
-- Soft warnings vs hard errors per requirement.
+- Anchor generation and collision handling live in `src/apply.ts`.
+- Validators and warnings are pending; keep acceptance soft vs hard per requirements.

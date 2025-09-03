@@ -1,6 +1,6 @@
 # Story: Concurrency & idempotency
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -20,10 +20,12 @@
 
 ## Tasks
 
-- [ ] Include current_commit in snapshot/getDocument.
-- [ ] Check expected_commit in applyOps.
-- [ ] Persist idempotency keys (short TTL) for dedupe.
+- [x] Include current_commit in snapshot/getDocument.
+- [x] Check expected_commit in applyOps.
+- [x] Store idempotency keys (commit replay).
+- [ ] Add TTL and namespacing for idempotency storage; tests.
 
 ## Notes
 
-- Consider namespacing keys by slug.
+- `current_commit` surfaced by `snapshot` and `getDocument`; `expected_commit` checked in `applyOps`.
+- `idempotency_key` short-circuits with stored commit; add TTL and slug namespace.

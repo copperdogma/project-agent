@@ -25,15 +25,15 @@
 | 007      | List tool                                         | Done        | /docs/stories/story-007-list.md                    |
 | 008      | Undo tool                                         | Done        | /docs/stories/story-008-undo.md                    |
 | 009      | Git integration (commit+diff)                     | Done        | /docs/stories/story-009-git-integration.md         |
-| 010      | Anchors & validation rules                        | To Do       | /docs/stories/story-010-anchors-validation.md      |
-| 011      | Concurrency & idempotency                         | To Do       | /docs/stories/story-011-concurrency-idempotency.md |
-| 012      | Auditing + rate limiting                          | To Do       | /docs/stories/story-012-audit-rate-limit.md        |
-| 013      | Health & version tools                            | To Do       | /docs/stories/story-013-health-version.md          |
-| 014      | Formatting invariants (dates, line endings)       | To Do       | /docs/stories/story-014-formatting.md              |
+| 010      | Anchors & validation rules                        | In Progress | /docs/stories/story-010-anchors-validation.md      |
+| 011      | Concurrency & idempotency                         | In Progress | /docs/stories/story-011-concurrency-idempotency.md |
+| 012      | Auditing + rate limiting                          | In Progress | /docs/stories/story-012-audit-rate-limit.md        |
+| 013      | Health & version tools                            | In Progress | /docs/stories/story-013-health-version.md          |
+| 014      | Formatting invariants (dates, line endings)       | In Progress | /docs/stories/story-014-formatting.md              |
 | 015      | Post-MVP: PreviewPlan + Search                    | To Do       | /docs/stories/story-015-post-mvp.md                |
-| 016      | Read-only mode                                    | To Do       | /docs/stories/story-016-readonly.md                |
-| 017      | Standardized error model                          | To Do       | /docs/stories/story-017-error-model.md             |
-| 018      | Payload limits & validation                       | To Do       | /docs/stories/story-018-limits-validation.md       |
-| 019      | Example vault fixtures                            | To Do       | /docs/stories/story-019-example-vault.md           |
+| 016      | Read-only mode                                    | In Progress | /docs/stories/story-016-readonly.md                |
+| 017      | Standardized error model                          | In Progress | /docs/stories/story-017-error-model.md             |
+| 018      | Payload limits & validation                       | In Progress | /docs/stories/story-018-limits-validation.md       |
+| 019      | Example vault fixtures                            | In Progress | /docs/stories/story-019-example-vault.md           |
 
 ## Notes
