@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
-import { getVaultRoot, writeFileSafely } from "./vault.js";
+import { getVaultRoot, writeFileSafely, findGitRoot } from "./vault.js";
+import { simpleGit } from "simple-git";
 import { deriveSlugFromTitle } from "./slug.js";
 
 function formatDateYYYYMMDD(timezone: string): string {
@@ -88,13 +89,13 @@ export interface CreateProjectResult {
 function sanitizeTitleForFilename(title: string): string {
   const trimmed = title.trim();
   // Replace characters that are unsafe in filenames across OSes
-  const replaced = trimmed.replace(/[\\/\:\*\?"<>\|]/g, "-");
+  const replaced = trimmed.replace(/[\\/:"*?<>|]/g, "-");
   // Collapse whitespace to single spaces
   const collapsed = replaced.replace(/\s+/g, " ");
   return collapsed;
 }
 
-export function createProject(input: CreateProjectInput): CreateProjectResult {
+export async function createProject(input: CreateProjectInput): Promise<CreateProjectResult> {
   const vaultRoot = getVaultRoot();
   const title = String(input.title || "").trim();
   if (!title) throw new Error("VALIDATION_ERROR: title required");
@@ -144,6 +145,47 @@ export function createProject(input: CreateProjectInput): CreateProjectResult {
   const final = Array.from(uniqueBySlug.values());
   final.sort((a, b) => a.title.localeCompare(b.title));
   writeRegistry(vaultRoot, final);
+
+  // Best-effort git commit for registry and new file to keep worktree clean
+  try {
+    const repoRoot = findGitRoot(vaultRoot) || vaultRoot;
+    if (fs.existsSync(path.join(repoRoot, ".git"))) {
+      const git = simpleGit({ baseDir: repoRoot });
+      const authorName = String(process.env.GIT_AUTHOR_NAME || process.env.GIT_COMMITTER_NAME || "Project Agent").trim() || "Project Agent";
+      const authorEmail = String(process.env.GIT_AUTHOR_EMAIL || process.env.GIT_COMMITTER_EMAIL || "robot@local").trim() || "robot@local";
+      const committerName = String(process.env.GIT_COMMITTER_NAME || process.env.GIT_AUTHOR_NAME || authorName).trim() || authorName;
+      const committerEmail = String(process.env.GIT_COMMITTER_EMAIL || process.env.GIT_AUTHOR_EMAIL || authorEmail).trim() || authorEmail;
+
+      const absProjectPath = path.join(vaultRoot, relPath);
+      const absRegistryPath = registryPath(vaultRoot);
+      const relProjectForRepo = path.relative(repoRoot, absProjectPath);
+      const relRegistryForRepo = path.relative(repoRoot, absRegistryPath);
+
+      await git.add([relProjectForRepo, relRegistryForRepo]);
+      const rawCommitArgs = [
+        "-c",
+        `user.name=${committerName}`,
+        "-c",
+        `user.email=${committerEmail}`,
+        "commit",
+        "-m",
+        `createProject(${slug}): add file and registry entry`,
+        "--author",
+        `${authorName} <${authorEmail}>`,
+      ];
+      try {
+        await git.raw(rawCommitArgs);
+      } catch (err: any) {
+        if (String(err?.message || err).includes("index.lock")) {
+          await git.raw(rawCommitArgs);
+        } else {
+          throw err;
+        }
+      }
+    }
+  } catch {
+    // best-effort commit; ignore failures
+  }
 
   return { title, slug, path: relPath };
 }

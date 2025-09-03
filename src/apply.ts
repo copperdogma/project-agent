@@ -146,18 +146,37 @@ async function gitCommitAndDiff(repoRoot: string, filePathRelativeToRepo: string
     const git = simpleGit({ baseDir: repoRoot });
     await waitForGitIndexLockClear(repoRoot, 5000);
     await git.add([filePathRelativeToRepo]);
-    let commitRes;
+    // Resolve author/committer from env with sane defaults
+    const authorName = String(process.env.GIT_AUTHOR_NAME || process.env.GIT_COMMITTER_NAME || "Project Agent").trim() || "Project Agent";
+    const authorEmail = String(process.env.GIT_AUTHOR_EMAIL || process.env.GIT_COMMITTER_EMAIL || "robot@local").trim() || "robot@local";
+    const committerName = String(process.env.GIT_COMMITTER_NAME || process.env.GIT_AUTHOR_NAME || authorName).trim() || authorName;
+    const committerEmail = String(process.env.GIT_COMMITTER_EMAIL || process.env.GIT_AUTHOR_EMAIL || authorEmail).trim() || authorEmail;
+
+    const rawCommitArgs = [
+      "-c",
+      `user.name=${committerName}`,
+      "-c",
+      `user.email=${committerEmail}`,
+      "commit",
+      "-m",
+      message,
+      "--author",
+      `${authorName} <${authorEmail}>`,
+    ];
+    let commitHash: string | null = null;
     try {
-      commitRes = await git.commit(message);
+      await git.raw(rawCommitArgs);
+      commitHash = (await git.revparse(["HEAD"]))?.trim() || null;
     } catch (err: any) {
       if (String(err?.message || err).includes("index.lock")) {
         await waitForGitIndexLockClear(repoRoot, 3000);
-        commitRes = await git.commit(message);
+        await git.raw(rawCommitArgs);
+        commitHash = (await git.revparse(["HEAD"]))?.trim() || null;
       } else {
         throw err;
       }
     }
-    const commit = String((commitRes as any).commit || "");
+    const commit = String(commitHash || "");
     let diff = "";
     if (commit) {
       try {

@@ -1,6 +1,6 @@
 # Story: Git integration (commit + diff)
 
-**Status**: To Do
+**Status**: Done
 
 ---
 
@@ -15,13 +15,13 @@
 ## Acceptance Criteria
 
 - Commits created on each write with summary; returns diff.
-- [ ] User must sign off on functionality before story can be marked complete.
+- [x] User must sign off on functionality before story can be marked complete.
 
 ## Tasks
 
-- [ ] Wire simple-git, author from env, fallback defaults.
-- [ ] Build commit message from ops summary.
-- [ ] Return diff in output.
+- [x] Wire simple-git, author from env, fallback defaults.
+- [x] Build commit message from ops summary.
+- [x] Return diff in output.
 
 ## Notes
 

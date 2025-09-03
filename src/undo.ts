@@ -64,8 +64,15 @@ export async function undoCommit(input: UndoInput): Promise<UndoResult> {
 
   // Perform revert with no edit; generate new commit
   try {
-    await git.raw(["revert", "--no-edit", commit]);
-  } catch (err) {
+    const authorName = String(process.env.GIT_AUTHOR_NAME || process.env.GIT_COMMITTER_NAME || "Project Agent").trim() || "Project Agent";
+    const authorEmail = String(process.env.GIT_AUTHOR_EMAIL || process.env.GIT_COMMITTER_EMAIL || "robot@local").trim() || "robot@local";
+    const committerName = String(process.env.GIT_COMMITTER_NAME || process.env.GIT_AUTHOR_NAME || authorName).trim() || authorName;
+    const committerEmail = String(process.env.GIT_COMMITTER_EMAIL || process.env.GIT_AUTHOR_EMAIL || authorEmail).trim() || authorEmail;
+
+    // Configure committer and set author for the generated revert commit
+    await git.raw(["-c", `user.name=${committerName}`, "-c", `user.email=${committerEmail}`, "revert", "--no-edit", "--no-commit", commit]);
+    await git.raw(["-c", `user.name=${committerName}`, "-c", `user.email=${committerEmail}`, "commit", "--no-verify", "--author", `${authorName} <${authorEmail}>`, "-m", `Revert ${commit}`]);
+  } catch {
     // Attempt to abort on conflicts to leave repo clean-ish
     try {
       await git.raw(["revert", "--abort"]);

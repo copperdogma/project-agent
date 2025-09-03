@@ -103,7 +103,7 @@ export function registerProjectTools(mcpServer: McpServer): void {
       const input: any = { title: String(args?.title || "") };
       if (args?.slug !== undefined) input.slug = String(args.slug);
       if (args?.router_email !== undefined) input.router_email = String(args.router_email);
-      const payload = createProject(input);
+      const payload = await createProject(input);
       return { content: [{ type: "text", text: JSON.stringify(payload) }] };
     },
   );
