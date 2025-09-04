@@ -1,6 +1,6 @@
 # Story: AI_TESTING end-to-end hardening
 
-**Status**: To Do
+**Status**: Done
 
 ---
 
@@ -21,10 +21,10 @@
 
 ## Tasks
 
-- [ ] Update test flows to v2 tools.
-- [ ] Add snapshot-based conflict path as fallback.
-- [ ] Add structured report template and PASS/FAIL thresholds.
-- [ ] Validate locally and adjust docs based on feedback.
+- [x] Update test flows to v2 tools.
+- [x] Add snapshot-based conflict path as fallback.
+- [x] Add structured report template and PASS/FAIL thresholds.
+- [x] Validate locally and adjust docs based on feedback.
 
 ## Notes
 

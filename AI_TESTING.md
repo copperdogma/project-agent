@@ -77,6 +77,13 @@ Step 7 — Concurrency conflict (optimistic concurrency)
     - Expect a conflict. The tool returns a JSON error payload; parse and assert error.code == "CONFLICT" or message contains "CONFLICT_EXPECTED_COMMIT".
     - If you send expected_commit as a non-string (e.g., object/number), the server returns VALIDATION_ERROR.
 
+Alternate Step 7 (fallback using snapshot-based stale commit)
+13b) Call project_snapshot again to capture stale_commit2 = current_commit.
+14b) Advance head as in step 14.
+15b) Trigger conflict using stale_commit2 with project_append:
+   { "slug": "<slug_main>", "section": "Notes", "text": "Should conflict (fallback)", "expectedCommit": "<stale_commit2>" }
+    - Expect a conflict as above.
+
 Step 8 — Undo (dedicated, conflict-free)
 16) Create a dedicated change to undo:
     - Call project_append with:
@@ -97,6 +104,23 @@ Step 10 — Reporting
     - Include important artifacts: slug_main, anchor1, commit1 (if any), and any errors encountered.
     - If any mandatory step failed (create/list/snapshot/get/apply basic/replay), mark the overall result as FAIL. Otherwise PASS with notes for skipped steps.
 ```
+
+Report template (paste at the end):
+
+- Tools discovered: PASS/FAIL (list)
+- Create: PASS/FAIL (slug_main)
+- List: PASS/FAIL
+- Snapshot/Get: PASS/FAIL
+- Append: PASS/FAIL (commit1, anchor1)
+- Idempotency: PASS/FAIL (replay observed?)
+- Update/Move/Delete: PASS/FAIL
+- Dedup: PASS/FAIL
+- Concurrency (head path): PASS/FAIL (error code?)
+- Concurrency (snapshot fallback): PASS/FAIL
+- Undo: PASS/FAIL (revert_commit)
+- Catalog smoke: PASS/FAIL
+
+Overall: PASS if all bolded core steps pass (Create, List, Snapshot/Get, Append, Update/Delete/Move, Dedup, Undo). Otherwise FAIL with notes.
 
 Notes
 - Concurrency/idempotency: Replay uses the same idempotency_key; conflict uses a stale expected_commit.
