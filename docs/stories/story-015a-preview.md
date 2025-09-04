@@ -1,6 +1,6 @@
 # Story: Post-MVP Preview (dry-run)
 
-**Status**: In Progress
+**Status**: Done
 
 ---
 
@@ -23,7 +23,7 @@
 - [x] Implement preview adapter: parse opsJson → internal ops
 - [x] Apply engine validations without writes
 - [x] Return structured result; add tests
-- [ ] User must sign off on functionality before story can be marked complete.
+- [x] User must sign off on functionality before story can be marked complete.
 
 ## Notes
 
