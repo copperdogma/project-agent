@@ -1,6 +1,6 @@
 # Story: Post-MVP Preview (dry-run)
 
-**Status**: To Do
+**Status**: In Progress
 
 ---
 
@@ -20,10 +20,12 @@
 
 ## Tasks
 
-- [ ] Implement preview adapter: parse opsJson → internal ops
-- [ ] Apply engine validations without writes
-- [ ] Return structured result; add tests
+- [x] Implement preview adapter: parse opsJson → internal ops
+- [x] Apply engine validations without writes
+- [x] Return structured result; add tests
+- [ ] User must sign off on functionality before story can be marked complete.
 
 ## Notes
 
 - Keep schema simple (string inputs) to avoid UI union issues.
+- Tool: `project_preview`. Test: `scripts/test-preview.mjs`.

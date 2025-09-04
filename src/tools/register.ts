@@ -3,7 +3,7 @@ import { z } from "zod";
 import { buildSnapshot } from "../snapshot.js";
 import { getDocument } from "../document.js";
 import { listProjects } from "../list.js";
-import { applyOps } from "../apply.js";
+import { applyOps, previewOps } from "../apply.js";
 import { createProject } from "../create.js";
 import { undoCommit } from "../undo.js";
 import { errorFromException, makeError } from "../errors.js";
@@ -11,6 +11,33 @@ import { writeAudit } from "../audit.js";
 import { allow as rateAllow } from "../rate.js";
 
 export function registerProjectTools(mcpServer: McpServer): void {
+  mcpServer.registerTool(
+    "project_preview",
+    {
+      description: "Dry-run validate a batch of ops without writing. Args: {slug, opsJson}",
+      inputSchema: { slug: z.string(), opsJson: z.string() },
+    },
+    async (args: any) => {
+      try {
+        const slug = String(args?.slug || "");
+        const opsJson = String(args?.opsJson || "");
+        let ops: any[] = [];
+        try {
+          const parsed = JSON.parse(opsJson);
+          if (Array.isArray(parsed)) ops = parsed;
+          else if (parsed && Array.isArray(parsed.ops)) ops = parsed.ops;
+          else throw new Error("VALIDATION_ERROR: opsJson must be an array or {ops:[]}");
+        } catch (e) {
+          throw new Error("VALIDATION_ERROR: invalid opsJson JSON");
+        }
+        const res = await previewOps({ slug, ops });
+        return { content: [{ type: "text", text: JSON.stringify(res) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
+    },
+  );
+
   mcpServer.registerTool(
     "project_snapshot",
     {

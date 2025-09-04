@@ -507,4 +507,141 @@ export async function applyOps(input: ApplyOpsInput): Promise<ApplyOpsResult> {
   };
 }
 
+export interface PreviewOpsResult {
+  ok: boolean;
+  would_change: boolean;
+  notes: string[];
+}
+
+export async function previewOps(input: ApplyOpsInput): Promise<PreviewOpsResult> {
+  try {
+    const { slug, ops } = input;
+    const maxOps = getMaxOpsPerCall();
+    if (!Array.isArray(ops) || ops.length === 0) {
+      throw new Error("VALIDATION_ERROR: ops must be a non-empty array");
+    }
+    if (ops.length > maxOps) {
+      throw new Error(`PAYLOAD_TOO_LARGE: too many ops in one call (>${maxOps})`);
+    }
+
+    const vaultRoot = getVaultRoot();
+    const fullPath = findFileBySlug(slug, vaultRoot);
+    if (!fullPath) throw new Error(`NOT_FOUND: No document found for slug ${slug}`);
+
+    const relPath = path.relative(vaultRoot, fullPath);
+    const file = readFileSafely(relPath);
+    const original = file.content;
+    const lines = original.replace(/^\uFEFF/, "").split(/\n|\r\n|\r/);
+    const { contentStart } = parseFrontmatter(original);
+    const sections = buildSectionMap(lines, contentStart);
+    const tz = process.env.TIMEZONE || "America/Edmonton";
+    const today = formatDateYYYYMMDD(tz);
+    const summary: string[] = [];
+
+    const fullTextForAnchorGen = lines.join("\n");
+
+    const findLineIndexByAnchor = (anchor: string): number => {
+      const id = anchor.startsWith("^") ? anchor : `^${anchor}`;
+      for (let i = contentStart; i < lines.length; i += 1) {
+        if (containsAnchor(lines[i] as string, id.replace(/^\^/, ""))) return i;
+      }
+      return -1;
+    };
+
+    const ensureSectionExists = (name: string) => {
+      const s = findSection(sections, name);
+      if (!s) throw new Error(`MISSING_SECTION: ${name}`);
+      return s;
+    };
+
+    for (const op of ops) {
+      if (op.type === "append") {
+        const s = ensureSectionExists(op.section);
+        const sectionSlice = lines.slice(s.start, s.end);
+        const normalizedNew = normalizeForDedup(op.text);
+        const exists = sectionSlice.some((ln) => normalizeForDedup(ln.replace(/\s*\^[a-z0-9-]+$/i, "")) === normalizedNew);
+        if (exists) {
+          summary.push(`append_skipped_dedup:${op.section}`);
+          continue;
+        }
+        const newAnchor = generateAnchor(fullTextForAnchorGen + lines.join("\n"));
+        const cleaned = stripAnchorsFromText(op.text);
+        const newLine = `${today} ai: ${cleaned} ${newAnchor}`.trimEnd();
+        const maxLen = getMaxLineLength();
+        if (newLine.length > maxLen) {
+          throw new Error(`PAYLOAD_TOO_LARGE: line exceeds MAX_LINE_LENGTH (${maxLen} bytes)`);
+        }
+        lines.splice(s.end, 0, newLine);
+        for (const sec of sections) {
+          if (sec.start > s.end) {
+            sec.start += 1;
+            sec.end += 1;
+          } else if (sec.end >= s.end) {
+            sec.end += 1;
+          }
+        }
+        summary.push(`append:${op.section}`);
+      } else if (op.type === "move_by_anchor") {
+        const fromIdx = findLineIndexByAnchor(op.anchor);
+        if (fromIdx < 0) throw new Error(`MISSING_ANCHOR: ${op.anchor}`);
+        const s = ensureSectionExists(op.to_section);
+        const moved = lines.splice(fromIdx, 1)[0] as string;
+        for (const sec of sections) {
+          if (sec.start > fromIdx) {
+            sec.start -= 1;
+            sec.end -= 1;
+          } else if (sec.end > fromIdx) {
+            sec.end -= 1;
+          }
+        }
+        lines.splice(s.end - (fromIdx < s.end ? 1 : 0), 0, moved);
+        for (const sec of sections) {
+          if (sec.start > s.end) {
+            sec.start += 1;
+            sec.end += 1;
+          } else if (sec.end >= s.end) {
+            sec.end += 1;
+          }
+        }
+        summary.push(`move:${op.anchor}->${op.to_section}`);
+      } else if (op.type === "update_by_anchor") {
+        const idx = findLineIndexByAnchor(op.anchor);
+        if (idx < 0) throw new Error(`MISSING_ANCHOR: ${op.anchor}`);
+        const old = lines[idx] as string;
+        const anc = extractAnchor(old) || (op.anchor.startsWith("^") ? op.anchor : `^${op.anchor}`);
+        const cleaned = stripAnchorsFromText(op.new_text);
+        const newline = `${today} ai: ${cleaned} ${anc}`.trimEnd();
+        const maxLen = getMaxLineLength();
+        if (newline.length > maxLen) {
+          throw new Error(`PAYLOAD_TOO_LARGE: line exceeds MAX_LINE_LENGTH (${maxLen} bytes)`);
+        }
+        lines[idx] = newline;
+        summary.push(`update:${anc}`);
+      } else if (op.type === "delete_by_anchor") {
+        const idx = findLineIndexByAnchor(op.anchor);
+        if (idx < 0) throw new Error(`MISSING_ANCHOR: ${op.anchor}`);
+        lines.splice(idx, 1);
+        for (const sec of sections) {
+          if (sec.start > idx) {
+            sec.start -= 1;
+            sec.end -= 1;
+          } else if (sec.end > idx) {
+            sec.end -= 1;
+          }
+        }
+        summary.push(`delete:${op.anchor}`);
+      } else {
+        throw new Error("VALIDATION_ERROR: unknown op type");
+      }
+    }
+
+    const updated = lines.join("\n");
+    const would_change = updated !== original;
+    return { ok: true, would_change, notes: summary };
+  } catch (err: any) {
+    const msg = String(err?.message || err || "error");
+    return { ok: false, would_change: false, notes: [msg] };
+  }
+}
+
 

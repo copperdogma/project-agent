@@ -32,7 +32,7 @@ Priority (next → later): 015a → 015b → 027
 | 012      | Auditing + rate limiting                          | Done        | /docs/stories/story-012-audit-rate-limit.md        |
 | 013      | Health & version tools                            | Done        | /docs/stories/story-013-health-version.md          |
 | 014      | Formatting invariants (dates, line endings)       | Done        | /docs/stories/story-014-formatting.md              |
-| 015a     | Post-MVP: Preview (dry-run)                       | To Do       | /docs/stories/story-015a-preview.md                |
+| 015a     | Post-MVP: Preview (dry-run)                       | In Progress | /docs/stories/story-015a-preview.md                |
 | 015b     | Post-MVP: Search                                  | To Do       | /docs/stories/story-015b-search.md                 |
 | 016      | Read-only mode                                    | Done        | /docs/stories/story-016-readonly.md                |
 | 017      | Standardized error model                          | Done        | /docs/stories/story-017-error-model.md             |
@@ -46,5 +46,6 @@ Priority (next → later): 015a → 015b → 027
 | 025      | Head commit tool                                  | Done        | /docs/stories/story-025-head-commit.md             |
 | 026      | Reliable undo validation                          | Done        | /docs/stories/story-026-undo-reliable.md           |
 | 027      | Tool catalog docs (schemas & examples)            | To Do       | /docs/stories/story-027-tool-catalog.md            |
+| 028      | Write AI Project instructions + tool overview            | To Do       |             |
 
 ## Notes

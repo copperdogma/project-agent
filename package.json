@@ -24,6 +24,7 @@
     "test:limits": "npm run build && node scripts/test-limits.mjs",
     "test:anchors": "npm run build && node scripts/test-anchors-validation.mjs",
     "test:fixtures": "npm run build && node scripts/test-fixtures.mjs",
+    "test:preview": "npm run build && node scripts/test-preview.mjs",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
