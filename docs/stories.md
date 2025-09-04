@@ -13,7 +13,7 @@
 
 ## Story List
 
-Priority (next → later): 010 → 018 → 019 → 015a → 015b → 027
+Priority (next → later): 010 → 019 → 015a → 015b → 027
 
 | Story ID | Title                                             | Status      | Link                                               |
 | -------- | ------------------------------------------------- | ----------- | -------------------------------------------------- |
@@ -36,7 +36,7 @@ Priority (next → later): 010 → 018 → 019 → 015a → 015b → 027
 | 015b     | Post-MVP: Search                                  | To Do       | /docs/stories/story-015b-search.md                 |
 | 016      | Read-only mode                                    | Done        | /docs/stories/story-016-readonly.md                |
 | 017      | Standardized error model                          | Done        | /docs/stories/story-017-error-model.md             |
-| 018      | Payload limits & validation                       | In Progress | /docs/stories/story-018-limits-validation.md       |
+| 018      | Payload limits & validation                       | Done        | /docs/stories/story-018-limits-validation.md       |
 | 019      | Example vault fixtures                            | In Progress | /docs/stories/story-019-example-vault.md           |
 | 020      | Write tools v2 (append/update/move/delete)        | Done        | /docs/stories/story-020-write-tools-v2.md          |
 | 021      | Remove legacy applyOps                            | Done        | /docs/stories/story-021-remove-legacy-apply-ops.md |
