@@ -15,8 +15,6 @@ async function run() {
     "project_move_by_anchor",
     "project_delete_by_anchor",
     "project_undo",
-    "project_head_commit",
-    "server_config",
   ];
 
   function extractToolNames(obj) {

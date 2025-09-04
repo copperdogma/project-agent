@@ -30,29 +30,7 @@ export function registerProjectTools(mcpServer: McpServer): void {
     },
   );
 
-  // HEAD commit helper for clients that struggle passing expected_commit
-  mcpServer.registerTool(
-    "project_head_commit",
-    {
-      description: "Return the current git HEAD commit SHA for the vault repository (or null if repo unavailable).",
-      inputSchema: {},
-    },
-    async () => {
-      try {
-        const { getVaultRoot, findGitRoot } = await import("../vault.js");
-        const { simpleGit } = await import("simple-git");
-        const root = getVaultRoot();
-        const repo = findGitRoot(root) || root;
-        const fs = await import("fs");
-        if (!fs.existsSync(`${repo}/.git`)) return { content: [{ type: "text", text: JSON.stringify({ head: null }) }] };
-        const git = simpleGit({ baseDir: repo });
-        const rev = (await git.revparse(["HEAD"]))?.trim() || null;
-        return { content: [{ type: "text", text: JSON.stringify({ head: rev || null }) }] };
-      } catch {
-        return { content: [{ type: "text", text: JSON.stringify({ head: null }) }] };
-      }
-    },
-  );
+  // project_head_commit intentionally not registered in public catalog (kept internally for tests)
 
   mcpServer.registerTool(
     "project_get_document",
@@ -81,23 +59,7 @@ export function registerProjectTools(mcpServer: McpServer): void {
     },
   );
 
-  // Server config helper to surface environment toggles for tests
-  mcpServer.registerTool(
-    "server_config",
-    {
-      description: "Expose selected server settings: IDEMPOTENCY_TTL_S, READONLY, RATE_LIMIT_WRITE_MAX, RATE_LIMIT_WRITE_WINDOW_S.",
-      inputSchema: {},
-    },
-    async () => {
-      const cfg = {
-        IDEMPOTENCY_TTL_S: Number(process.env.IDEMPOTENCY_TTL_S ?? 3600),
-        READONLY: String(process.env.READONLY || "false").toLowerCase() === "true",
-        RATE_LIMIT_WRITE_MAX: Number(process.env.RATE_LIMIT_WRITE_MAX || 20),
-        RATE_LIMIT_WRITE_WINDOW_S: Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60),
-      };
-      return { content: [{ type: "text", text: JSON.stringify(cfg) }] };
-    },
-  );
+  // server_config intentionally not registered in public catalog (kept internally for diagnostics)
 
   mcpServer.registerTool(
     "project_list",
