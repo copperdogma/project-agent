@@ -1,6 +1,6 @@
 # AI Validation Script for Claude (MCP)
 
-Paste the following message into Claude. It assumes your MCP server is already connected and exposes these tools with underscores: `project_list`, `project_snapshot`, `project_get_document`, `project_create`, `project_append`, `project_update_by_anchor`, `project_move_by_anchor`, `project_delete_by_anchor`, `project_undo`, `project_head_commit`, `server_health`, `server_version`, `server_config`.
+Paste the following message into Claude. It assumes your MCP server is already connected and exposes these tools with underscores: `project_list`, `project_snapshot`, `project_get_document`, `project_create`, `project_append`, `project_update_by_anchor`, `project_move_by_anchor`, `project_delete_by_anchor`, `project_undo`, `project_preview`, `project_search`, `server_health`, `server_version`.
 
 ```
 You are connected to an MCP server that exposes project tools. Please run a full validation of all tools and critical behaviors. Follow these rules throughout:
@@ -22,7 +22,7 @@ Variables you will create and use:
 - stale_commit: a previously captured commit used to simulate a concurrency conflict.
 
 Step 0 — Discover tools and environment
-1) List available tools. Assert that at least these exist: project_list, project_snapshot, project_get_document, project_create, project_append, project_update_by_anchor, project_move_by_anchor, project_delete_by_anchor, project_undo, project_head_commit, server_health, server_version, server_config.
+1) List available tools. Assert that at least these exist: project_list, project_snapshot, project_get_document, project_create, project_append, project_update_by_anchor, project_move_by_anchor, project_delete_by_anchor, project_undo, project_preview, project_search, server_health, server_version.
 2) Call server_health. Assert JSON has status="ok" and uptime_s is a number.
 3) Call server_version. Assert JSON has string fields app, version, schema.
 
@@ -36,22 +36,33 @@ Step 2 — List + fetch
 6) Call project_snapshot with { slug: slug_main }. Assert object has keys: frontmatter, toc, per_section_tail, anchors_index, current_commit, date_local, tz, path, size_bytes. Save snapshot.current_commit into stale_commit (may be null).
 7) Call project_get_document with { slug: slug_main }. Assert it returns: frontmatter, content, path, size_bytes, current_commit, date_local, tz. Note: content should include Markdown headings (e.g., "# Uncategorized", "# Notes", "# Resources").
 
+Step 2a — Preview (dry-run)
+8) Call project_preview with:
+   { "slug": "<slug_main>", "opsJson": "[{\\"type\\":\\"append\\",\\"section\\":\\"Notes\\",\\"text\\":\\"Preview validation line\\"}]" }
+   - Assert response has { ok: true, would_change: true } and notes includes an item starting with "append:" or dedup.
+   - Call project_preview again with opsJson for an existing identical line; assert ok: true and notes include "append_skipped_dedup:".
+
+Step 2b — Search within document
+9) Call project_search with { slug: "<slug_main>", query: "validation" }.
+   - Assert matches is an array. If query appears in the document, assert at least one match with excerpt containing the query (case-insensitive).
+   - Optionally: scope a section with { scope: "section", section: "Notes" } and assert matches are from that section only.
+
 Step 3 — Basic append (v2 tool)
-8) Call project_append with input (paste only the input object in your client):
+10) Call project_append with input (paste only the input object in your client):
    { "slug": "<slug_main>", "section": "Notes", "text": "Validation line 1", "expectedCommit": "<stale_commit>", "idempotencyKey": "validation-key-1" }
    - Assert summary contains a string starting with "append:".
    - Save primary_anchors[0] into anchor1 (if present) and save commit into commit1 (may be null).
    - If diff is available (repo present), assert it contains a '+'.
 
 Step 4 — Idempotency replay
-9) Call project_append again, same input as Step 8 but you can omit expectedCommit:
+11) Call project_append again, same input as Step 10 but you can omit expectedCommit:
    { "slug": "<slug_main>", "section": "Notes", "text": "Validation line 1", "idempotencyKey": "validation-key-1" }
    - Assert summary includes "idempotent_replay".
    - Assert commit is equal to the previously stored commit1 (when commit1 is non-null). Assert diff is empty string.
    - Note: If IDEMPOTENCY_TTL_S is 0 on the server, replay is disabled; record a skip instead of a failure.
 
 Step 5 — Update/Move/Delete by anchor (v2 tools)
-10) If anchor1 is available:
+12) If anchor1 is available:
    a) Call project_update_by_anchor with:
       { "slug": "<slug_main>", "anchor": "<anchor1>", "newText": "Validation line 1 (updated)" }
       - Assert summary contains an item starting with "update:" and includes the anchor id.
@@ -61,26 +72,26 @@ Step 5 — Update/Move/Delete by anchor (v2 tools)
    c) Call project_delete_by_anchor with:
       { "slug": "<slug_main>", "anchor": "<anchor1>" }
       - Assert summary contains "delete:" with the anchor.
-   Else: record a skip if no anchor was returned in Step 8.
+   Else: record a skip if no anchor was returned in Step 10.
 
 Step 6 — Dedup behavior
-11) Call project_append with { "slug": "<slug_main>", "section": "Resources", "text": "- https://example.com" }.
-12) Call project_append again with the exact same input as step 11.
+13) Call project_append with { "slug": "<slug_main>", "section": "Resources", "text": "- https://example.com" }.
+14) Call project_append again with the exact same input as step 13.
    - Assert summary includes an item starting with "append_skipped_dedup:" indicating dedup worked.
 
 Step 7 — Concurrency conflict (optimistic concurrency)
-13) Call project_head_commit to capture current HEAD into fresh_head (may be null). If null, fall back to project_snapshot.current_commit.
-14) Advance head (no expectedCommit):
+15) Capture a stale commit via snapshot.current_commit saved earlier (stale_commit). If stale_commit is null, skip this step.
+16) Advance head (no expectedCommit):
    { "slug": "<slug_main>", "section": "Notes", "text": "Advance head" }  // project_append
-15) Trigger conflict using stale expectedCommit:
+17) Trigger conflict using stale expectedCommit:
    { "slug": "<slug_main>", "section": "Notes", "text": "Should conflict", "expectedCommit": "<fresh_head>" }  // project_append
     - Expect a conflict. The tool returns a JSON error payload; parse and assert error.code == "CONFLICT" or message contains "CONFLICT_EXPECTED_COMMIT".
     - If you send expected_commit as a non-string (e.g., object/number), the server returns VALIDATION_ERROR.
 
-Alternate Step 7 (fallback using snapshot-based stale commit)
-13b) Call project_snapshot again to capture stale_commit2 = current_commit.
-14b) Advance head as in step 14.
-15b) Trigger conflict using stale_commit2 with project_append:
+Alternate approach if you need a fresh stale commit
+15b) Call project_snapshot again to capture stale_commit2 = current_commit.
+16b) Advance head as in step 16.
+17b) Trigger conflict using stale_commit2 with project_append:
    { "slug": "<slug_main>", "section": "Notes", "text": "Should conflict (fallback)", "expectedCommit": "<stale_commit2>" }
     - Expect a conflict as above.
 
