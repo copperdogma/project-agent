@@ -22,10 +22,11 @@
 
 - [x] Implement anchor generator and collision handling (-b on collision).
 - [x] Add dedup normalization for URLs/text.
-- [ ] Implement validators for Tasks/Resources/Others with soft warnings.
-- [ ] Unit tests covering edge cases (collision, invalid dates, bad section formats).
+- [x] Implement validators for Tasks/Resources/Others with soft warnings.
+- [x] Unit tests covering edge cases (collision, invalid dates, bad section formats).
 
 ## Notes
 
 - Anchor generation and collision handling live in `src/apply.ts`.
-- Validators and warnings are pending; keep acceptance soft vs hard per requirements.
+- Validators now produce soft warnings via `snapshot.warnings` codes: `bad_date_prefix:<section>`, `missing_anchor:<section>`, `bad_anchor:<section>`, `line_too_long:<section>`.
+- Tests: `scripts/test-anchors-validation.mjs`.

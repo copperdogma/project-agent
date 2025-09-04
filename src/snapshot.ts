@@ -137,6 +137,45 @@ function tailsFromSections(sections: Record<string, string[]>, tail: number): Re
   return out;
 }
 
+function buildFormatWarnings(sections: Record<string, string[]>): string[] {
+  const warnings: string[] = [];
+  const noteOnce = (code: string) => {
+    if (!warnings.includes(code)) warnings.push(code);
+  };
+
+  const dateRegex = /^\d{8}\s+ai:\s+/;
+  const anchorRegex = /\^([a-z0-9]{6,8}(?:-b)?)(?:\b|$)/i;
+
+  for (const [section, lines] of Object.entries(sections)) {
+    let warnedDate = false;
+    let warnedAnchor = false;
+    let warnedMissing = false;
+    for (const ln of lines) {
+      const line = String(ln ?? "");
+      if (!line.trim()) continue;
+      // If line appears to be a content line with ai: prefix, validate date prefix
+      if (line.includes("ai:")) {
+        if (!dateRegex.test(line) && !warnedDate) {
+          noteOnce(`bad_date_prefix:${section}`);
+          warnedDate = true;
+        }
+        // If ai: present but no valid anchor
+        if (!anchorRegex.test(line) && !warnedMissing) {
+          noteOnce(`missing_anchor:${section}`);
+          warnedMissing = true;
+        }
+        // If anchor present but malformed (e.g., wrong charset/length)
+        const m = /\^([^\s]+)/.exec(line);
+        if (m && !anchorRegex.test(`^${m[1]}`) && !warnedAnchor) {
+          noteOnce(`bad_anchor:${section}`);
+          warnedAnchor = true;
+        }
+      }
+    }
+  }
+  return warnings;
+}
+
 async function readCurrentCommit(vaultRoot: string): Promise<string | null> {
   try {
     const repoRoot = findGitRoot(vaultRoot) || vaultRoot;
@@ -167,18 +206,22 @@ export async function buildSnapshot(slug: string): Promise<SnapshotPayload> {
   const date_local = formatDateYYYYMMDD(tz);
   const current_commit = await readCurrentCommit(vaultRoot);
 
-  const warnings: string[] = [];
+  let warnings: string[] = [];
   const maxLine = Number(process.env.MAX_LINE_LENGTH || 16 * 1024);
   if (Number.isFinite(maxLine) && maxLine > 0) {
     for (const [section, lines] of Object.entries(sections)) {
       for (const ln of lines) {
         if (ln.length > maxLine) {
-          warnings.push(`line_too_long:${section}`);
+          if (!warnings.includes(`line_too_long:${section}`)) warnings.push(`line_too_long:${section}`);
           break;
         }
       }
     }
   }
+
+  // Format validators (soft warnings)
+  const formatWarn = buildFormatWarnings(sections);
+  if (formatWarn.length) warnings = [...new Set([...warnings, ...formatWarn])];
 
   return {
     frontmatter,

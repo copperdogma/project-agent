@@ -22,6 +22,7 @@
     "test:idempotency:ttl": "npm run build && node scripts/test-idempotency-ttl.mjs",
     "test:idempotency:ns": "npm run build && node scripts/test-idempotency-namespace.mjs",
     "test:limits": "npm run build && node scripts/test-limits.mjs",
+    "test:anchors": "npm run build && node scripts/test-anchors-validation.mjs",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
