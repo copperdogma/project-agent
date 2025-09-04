@@ -5,6 +5,6 @@ export function deriveSlugFromTitle(title: string): string {
   // Replace remaining whitespace with dashes
   const withDashes = tight.replace(/\s+/g, "-");
   // Keep alphanumeric, plus, and minus; drop other punctuation
-  const filtered = withDashes.replace(/[^a-zA-Z0-9+\-]/g, "");
+  const filtered = withDashes.replace(/[^a-zA-Z0-9+-]/g, "");
   return filtered.toLowerCase();
 }

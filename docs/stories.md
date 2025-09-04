@@ -13,6 +13,8 @@
 
 ## Story List
 
+Priority (next → later): 010 → 018 → 019 → 015a → 015b → 027
+
 | Story ID | Title                                             | Status      | Link                                               |
 | -------- | ------------------------------------------------- | ----------- | -------------------------------------------------- |
 | 001      | Implement MCP transport + auth shell              | Done        | /docs/stories/story-001-transport-auth.md          |
@@ -29,7 +31,7 @@
 | 011      | Concurrency & idempotency                         | Done        | /docs/stories/story-011-concurrency-idempotency.md |
 | 012      | Auditing + rate limiting                          | Done        | /docs/stories/story-012-audit-rate-limit.md        |
 | 013      | Health & version tools                            | Done        | /docs/stories/story-013-health-version.md          |
-| 014      | Formatting invariants (dates, line endings)       | In Progress | /docs/stories/story-014-formatting.md              |
+| 014      | Formatting invariants (dates, line endings)       | Done        | /docs/stories/story-014-formatting.md              |
 | 015a     | Post-MVP: Preview (dry-run)                       | To Do       | /docs/stories/story-015a-preview.md                |
 | 015b     | Post-MVP: Search                                  | To Do       | /docs/stories/story-015b-search.md                 |
 | 016      | Read-only mode                                    | Done        | /docs/stories/story-016-readonly.md                |

@@ -22,8 +22,8 @@
 
 - [x] Implement date formatting helper and enforce in apply/update.
 - [x] Detect and preserve EOL per-file via `writeFileSafely`.
-- [ ] Tests covering mixed EOL files and long lines.
+- [x] Tests covering mixed EOL files and long lines.
 
 ## Notes
 
-- Date stamping and EOL preservation exist; rigorous tests pending.
+- Date stamping and EOL preservation exist; rigorous tests added in `scripts/test-formatting.mjs`.

@@ -9,17 +9,17 @@
 
       ## Current Story
 
-  Story 009 — Git integration (commit + diff)
+  Story 014 — Formatting invariants (dates, line endings)
 
 ## Current Task
 
-Harden commit/diff behavior; ensure robust diffs and commit summaries
+Add and run integration tests for mixed EOL and long-line updates
 
 ## Plan Checklist
 
-- [ ] Ensure consistent commit author/message; summarize ops
-- [ ] Validate diffs include file paths and hunks
-- [ ] Add tests around large and multi-file changes
+- [x] Create test verifying CRLF preservation and YYYYMMDD date prefix
+- [x] Verify long-line update behavior
+- [x] Run and pass new integration test
 
 ## Issues/Blockers
 
@@ -27,11 +27,12 @@ Harden commit/diff behavior; ensure robust diffs and commit summaries
 
 ## Recently Completed
 
-- [x] Story 003 — Snapshot tool
+- [x] tests: `scripts/test-formatting.mjs` added and passing
 
 ## Decisions Made
 
-- [ ] Use same frontmatter parser as snapshot
+- [x] Preserve per-file line endings using `readFileSafely` + `writeFileSafely`
+- [x] Date prefix enforced via `formatDateYYYYMMDD` in write paths
 
 ## Lessons Learned
 
