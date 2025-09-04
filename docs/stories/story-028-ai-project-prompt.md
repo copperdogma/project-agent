@@ -1,6 +1,6 @@
 # Story: AI Project system prompt + tool overview
 
-**Status**: To Do
+**Status**: Done
 
 ---
 
@@ -29,11 +29,11 @@
 
 ## Tasks
 
-- [ ] Draft the `AI_PROJECT_PROMPT.md` content covering intent, discovery, planning, execution, and error handling.
-- [ ] Add a public tool overview section with usage tips and optional parameter guidance.
-- [ ] Add 2–3 example workflows (input → tool calls → expected outcomes).
-- [ ] Review tone and length for project system prompts (concise yet comprehensive).
-- [ ] User sign-off; then add the file at repo root.
+- [x] Draft the `AI_PROJECT_PROMPT.md` content covering intent, discovery, planning, execution, and error handling.
+- [x] Add a public tool overview section with usage tips and optional parameter guidance.
+- [x] Add 2–3 example workflows (input → tool calls → expected outcomes).
+- [x] Review tone and length for project system prompts (concise yet comprehensive).
+- [x] User sign-off; then add the file at repo root.
 
 ## Notes
 
