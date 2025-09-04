@@ -312,6 +312,16 @@ export interface ApplyOpsResult {
   current_commit: string | null;
 }
 
+function getMaxOpsPerCall(): number {
+  const val = Number(process.env.MAX_OPS_PER_CALL || 128);
+  return Number.isFinite(val) && val > 0 ? Math.floor(val) : 128;
+}
+
+function getMaxLineLength(): number {
+  const val = Number(process.env.MAX_LINE_LENGTH || 16 * 1024);
+  return Number.isFinite(val) && val > 256 ? Math.floor(val) : 16 * 1024;
+}
+
 export async function applyOps(input: ApplyOpsInput): Promise<ApplyOpsResult> {
   const { slug, ops } = input;
   const expected_commit_raw: unknown = (input as any)?.expected_commit ?? null;
@@ -324,6 +334,13 @@ export async function applyOps(input: ApplyOpsInput): Promise<ApplyOpsResult> {
   }
   const expected_commit: string | null = (expected_commit_raw === undefined ? null : (expected_commit_raw as any)) ?? null;
   const idempotency_key: string | null = (idempotency_key_raw === undefined ? null : (idempotency_key_raw as any)) ?? null;
+  const maxOps = getMaxOpsPerCall();
+  if (!Array.isArray(ops) || ops.length === 0) {
+    throw new Error("VALIDATION_ERROR: ops must be a non-empty array");
+  }
+  if (ops.length > maxOps) {
+    throw new Error(`PAYLOAD_TOO_LARGE: too many ops in one call (>${maxOps})`);
+  }
   const vaultRoot = getVaultRoot();
   const fullPath = findFileBySlug(slug, vaultRoot);
   if (!fullPath) throw new Error(`NOT_FOUND: No document found for slug ${slug}`);
@@ -391,6 +408,10 @@ export async function applyOps(input: ApplyOpsInput): Promise<ApplyOpsResult> {
       const newAnchor = generateAnchor(fullTextForAnchorGen + lines.join("\n"));
       const cleaned = stripAnchorsFromText(op.text);
       const newLine = `${today} ai: ${cleaned} ${newAnchor}`.trimEnd();
+      const maxLen = getMaxLineLength();
+      if (newLine.length > maxLen) {
+        throw new Error(`PAYLOAD_TOO_LARGE: line exceeds MAX_LINE_LENGTH (${maxLen} bytes)`);
+      }
       lines.splice(s.end, 0, newLine);
       // update section boundaries after insertion
       for (const sec of sections) {
@@ -437,6 +458,10 @@ export async function applyOps(input: ApplyOpsInput): Promise<ApplyOpsResult> {
       const anc = extractAnchor(old) || (op.anchor.startsWith("^") ? op.anchor : `^${op.anchor}`);
       const cleaned = stripAnchorsFromText(op.new_text);
       const newline = `${today} ai: ${cleaned} ${anc}`.trimEnd();
+      const maxLen = getMaxLineLength();
+      if (newline.length > maxLen) {
+        throw new Error(`PAYLOAD_TOO_LARGE: line exceeds MAX_LINE_LENGTH (${maxLen} bytes)`);
+      }
       lines[idx] = newline;
       createdAnchors.push(anc);
       summary.push(`update:${anc}`);

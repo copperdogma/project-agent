@@ -20,11 +20,13 @@
 
 ## Tasks
 
-- [ ] Implement size checks with standardized error PAYLOAD_TOO_LARGE.
-- [ ] Enforce max ops per call.
-- [ ] Implement line-length checks.
-- [ ] Document limits in README and return actionable details.
+- [x] Implement size checks with standardized error PAYLOAD_TOO_LARGE.
+- [x] Enforce max ops per call.
+- [x] Implement line-length checks.
+- [x] Document limits in README and return actionable details.
 
 ## Notes
 
 - Wire to environment variables where appropriate with safe defaults.
+- Env vars: `SNAPSHOT_MAX_BYTES` (default 256KB), `MAX_OPS_PER_CALL` (default 128), `MAX_LINE_LENGTH` (default 16384), `SNAPSHOT_TAIL`.
+- Tests: `scripts/test-limits.mjs`.

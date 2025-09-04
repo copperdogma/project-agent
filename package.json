@@ -21,6 +21,7 @@
     "test:integration:snapshot": "npm run build && node scripts/test-integration-snapshot-structured.mjs",
     "test:idempotency:ttl": "npm run build && node scripts/test-idempotency-ttl.mjs",
     "test:idempotency:ns": "npm run build && node scripts/test-idempotency-namespace.mjs",
+    "test:limits": "npm run build && node scripts/test-limits.mjs",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",

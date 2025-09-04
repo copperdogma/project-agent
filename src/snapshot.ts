@@ -15,6 +15,7 @@ export interface SnapshotPayload {
   tz: string;
   path: string;
   size_bytes: number;
+  warnings?: string[];
 }
 
 function formatDateYYYYMMDD(timezone: string): string {
@@ -166,6 +167,19 @@ export async function buildSnapshot(slug: string): Promise<SnapshotPayload> {
   const date_local = formatDateYYYYMMDD(tz);
   const current_commit = await readCurrentCommit(vaultRoot);
 
+  const warnings: string[] = [];
+  const maxLine = Number(process.env.MAX_LINE_LENGTH || 16 * 1024);
+  if (Number.isFinite(maxLine) && maxLine > 0) {
+    for (const [section, lines] of Object.entries(sections)) {
+      for (const ln of lines) {
+        if (ln.length > maxLine) {
+          warnings.push(`line_too_long:${section}`);
+          break;
+        }
+      }
+    }
+  }
+
   return {
     frontmatter,
     toc,
@@ -177,5 +191,6 @@ export async function buildSnapshot(slug: string): Promise<SnapshotPayload> {
     tz,
     path: path.relative(vaultRoot, fullPath),
     size_bytes: stat.size,
-  };
+    ...(warnings.length ? { warnings } : {}),
+  } as SnapshotPayload;
 }

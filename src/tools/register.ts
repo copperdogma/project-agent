@@ -23,6 +23,10 @@ export function registerProjectTools(mcpServer: McpServer): void {
       try {
         const slug = String(args?.slug || "");
         const payload = await buildSnapshot(slug);
+        const maxBytes = Number(process.env.SNAPSHOT_MAX_BYTES || 256 * 1024);
+        if (Number.isFinite(maxBytes) && maxBytes > 0 && payload.size_bytes > maxBytes) {
+          return { content: [{ type: "text", text: JSON.stringify(makeError("PAYLOAD_TOO_LARGE", `Snapshot exceeds limit (${maxBytes} bytes)`, { size_bytes: payload.size_bytes, max_bytes: maxBytes })) }] };
+        }
         return { content: [{ type: "text", text: JSON.stringify(payload) }] };
       } catch (err) {
         return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
