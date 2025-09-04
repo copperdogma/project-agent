@@ -40,7 +40,9 @@ Step 2a — Preview (dry-run)
 8) Call project_preview with:
    { "slug": "<slug_main>", "opsJson": "[{\\"type\\":\\"append\\",\\"section\\":\\"Notes\\",\\"text\\":\\"Preview validation line\\"}]" }
    - Assert response has { ok: true, would_change: true } and notes includes an item starting with "append:" or dedup.
-   - Call project_preview again with opsJson for an existing identical line; assert ok: true and notes include "append_skipped_dedup:".
+   - To demonstrate dedup within preview, send a single batch with two identical appends so the second is skipped in the same dry-run:
+     { "slug": "<slug_main>", "opsJson": "[{\"type\":\"append\",\"section\":\"Notes\",\"text\":\"Preview validation line\"},{\"type\":\"append\",\"section\":\"Notes\",\"text\":\"Preview validation line\"}]" }
+     - Assert notes contains an item starting with "append_skipped_dedup:".
 
 Step 2b — Search within document
 9) Call project_search with { slug: "<slug_main>", query: "validation" }.
@@ -87,6 +89,7 @@ Step 7 — Concurrency conflict (optimistic concurrency)
    { "slug": "<slug_main>", "section": "Notes", "text": "Should conflict", "expectedCommit": "<fresh_head>" }  // project_append
     - Expect a conflict. The tool returns a JSON error payload; parse and assert error.code == "CONFLICT" or message contains "CONFLICT_EXPECTED_COMMIT".
     - If you send expected_commit as a non-string (e.g., object/number), the server returns VALIDATION_ERROR.
+    - If your client UI does not expose optional fields, switch to the raw JSON input and include "expectedCommit" as a non-empty string.
 
 Alternate approach if you need a fresh stale commit
 15b) Call project_snapshot again to capture stale_commit2 = current_commit.
@@ -138,5 +141,4 @@ Notes
 - Idempotency TTL: If your environment sets IDEMPOTENCY_TTL_S=0, replay will be disabled and Step 4 should not produce idempotent_replay (treat as expected in that configuration).
 - Git: If the vault isn’t a git repo, commits/diffs may be null/empty; treat undo/diff checks as permissible skips.
 - Read-only and rate limits are environment-driven and not directly exercised here.
- - If your UI hides optional fields (expected_commit, idempotency_key): include them explicitly in the tool input JSON as shown above; most MCP clients accept extra fields even if not shown in form UIs.
- - You can call server_config at the beginning to see IDEMPOTENCY_TTL_S and READONLY values the server is using.
+ - Optional parameter tips: use camelCase (expectedCommit, idempotencyKey) and send non-empty strings. If your client UI hides these fields, use the raw JSON input editor to include them explicitly; avoid sending explicit nulls.
