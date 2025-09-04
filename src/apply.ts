@@ -200,22 +200,92 @@ function idempotencyStorePath(root: string): string {
   return path.join(root, ".project-agent", "idempotency");
 }
 
-function readStoredCommitForKey(root: string, key: string): string | null {
+function sanitizeForFs(name: string): string {
+  return String(name || "").replace(/[^a-zA-Z0-9._-]/g, "_");
+}
+
+function getIdempotencyTtlSeconds(): number {
+  const v = Number(process.env.IDEMPOTENCY_TTL_S ?? 3600);
+  if (!Number.isFinite(v)) return 3600;
+  return v;
+}
+
+type IdempotencyRecord = {
+  commit: string | null;
+  slug: string;
+  created_at: string; // ISO8601
+};
+
+function readStoredCommitForKey(root: string, slug: string, key: string): string | null {
   try {
-    const p = path.join(idempotencyStorePath(root), `${key}.txt`);
-    if (fs.existsSync(p)) return fs.readFileSync(p, "utf8").trim() || null;
+    const ttl = getIdempotencyTtlSeconds();
+    if (ttl <= 0) return null; // TTL disabled → no replay
+
+    const dir = path.join(idempotencyStorePath(root), sanitizeForFs(slug));
+    const p = path.join(dir, `${sanitizeForFs(key)}.json`);
+    if (fs.existsSync(p)) {
+      try {
+        const raw = fs.readFileSync(p, "utf8");
+        const rec = JSON.parse(raw) as IdempotencyRecord;
+        if (!rec || typeof rec !== "object") return null;
+        if (rec.slug !== slug) return null; // namespace isolation
+        const created = Date.parse(rec.created_at || "");
+        if (!Number.isFinite(created)) return null;
+        const now = Date.now();
+        if (now - created > ttl * 1000) {
+          try { fs.unlinkSync(p); } catch {}
+          return null;
+        }
+        return rec.commit || null;
+      } catch {
+        // fallthrough to legacy format
+      }
+    }
+
+    // Legacy flat format: .txt under root dir without slug; no TTL info
+    const legacy = path.join(idempotencyStorePath(root), `${sanitizeForFs(key)}.txt`);
+    if (fs.existsSync(legacy)) {
+      try {
+        const commit = fs.readFileSync(legacy, "utf8").trim() || null;
+        // Apply TTL based on file mtime as a rough bound
+        const stat = fs.statSync(legacy);
+        const ageMs = Date.now() - stat.mtimeMs;
+        if (ageMs > ttl * 1000) return null;
+        return commit;
+      } catch {
+        return null;
+      }
+    }
     return null;
   } catch {
     return null;
   }
 }
 
-function writeStoredCommitForKey(root: string, key: string, commit: string | null): void {
+function writeStoredCommitForKey(root: string, slug: string, key: string, commit: string | null): void {
   try {
-    const dir = idempotencyStorePath(root);
+    const ttl = getIdempotencyTtlSeconds();
+    if (ttl <= 0) return; // disabled → do not store
+
+    const dir = path.join(idempotencyStorePath(root), sanitizeForFs(slug));
     fs.mkdirSync(dir, { recursive: true });
-    const p = path.join(dir, `${key}.txt`);
-    fs.writeFileSync(p, String(commit || ""), "utf8");
+    // Ensure .project-agent/.gitignore exists to avoid dirty workdir from app files
+    try {
+      const ignoreFile = path.join(root, ".project-agent", ".gitignore");
+      if (!fs.existsSync(ignoreFile)) {
+        const contents = [
+          "# Ignored app artifacts",
+          "logs/",
+          "idempotency/",
+          "*.lock",
+          "",
+        ].join("\n");
+        fs.writeFileSync(ignoreFile, contents, "utf8");
+      }
+    } catch {}
+    const rec: IdempotencyRecord = { commit: commit || null, slug, created_at: new Date().toISOString() };
+    const p = path.join(dir, `${sanitizeForFs(key)}.json`);
+    fs.writeFileSync(p, JSON.stringify(rec), "utf8");
   } catch {
     // best effort
   }
@@ -243,14 +313,24 @@ export interface ApplyOpsResult {
 }
 
 export async function applyOps(input: ApplyOpsInput): Promise<ApplyOpsResult> {
-  const { slug, ops, expected_commit, idempotency_key } = input;
+  const { slug, ops } = input;
+  const expected_commit_raw: unknown = (input as any)?.expected_commit ?? null;
+  const idempotency_key_raw: unknown = (input as any)?.idempotency_key ?? null;
+  if (!(expected_commit_raw === null || typeof expected_commit_raw === "string" || expected_commit_raw === undefined)) {
+    throw new Error("VALIDATION_ERROR: expected_commit must be a string or null");
+  }
+  if (!(idempotency_key_raw === null || typeof idempotency_key_raw === "string" || idempotency_key_raw === undefined)) {
+    throw new Error("VALIDATION_ERROR: idempotency_key must be a string or null");
+  }
+  const expected_commit: string | null = (expected_commit_raw === undefined ? null : (expected_commit_raw as any)) ?? null;
+  const idempotency_key: string | null = (idempotency_key_raw === undefined ? null : (idempotency_key_raw as any)) ?? null;
   const vaultRoot = getVaultRoot();
   const fullPath = findFileBySlug(slug, vaultRoot);
   if (!fullPath) throw new Error(`NOT_FOUND: No document found for slug ${slug}`);
 
-  // Idempotency short-circuit
+  // Idempotency short-circuit (namespaced by slug + TTL)
   if (idempotency_key) {
-    const prev = readStoredCommitForKey(vaultRoot, idempotency_key);
+    const prev = readStoredCommitForKey(vaultRoot, slug, idempotency_key);
     if (prev) {
       const cur = await readCurrentCommit(vaultRoot);
       return {
@@ -389,7 +469,7 @@ export async function applyOps(input: ApplyOpsInput): Promise<ApplyOpsResult> {
   const { commit, diff } = await gitCommitAndDiff(repoRoot, filePathRelativeToRepo, commitMsg);
 
   if (idempotency_key) {
-    writeStoredCommitForKey(vaultRoot, idempotency_key, commit);
+    writeStoredCommitForKey(vaultRoot, slug, idempotency_key, commit);
   }
 
   const currentCommitAfter = await readCurrentCommit(repoRoot);

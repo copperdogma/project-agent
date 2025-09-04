@@ -1,6 +1,6 @@
 # Story: Health & version tools
 
-**Status**: In Progress
+**Status**: Done
 
 ---
 
@@ -16,13 +16,13 @@
 
 - server.health returns status and uptime.
 - server.version returns app and schema version.
-- [ ] User must sign off on functionality before story can be marked complete.
+- [x] User must sign off on functionality before story can be marked complete.
 
 ## Tasks
 
 - [x] Implement uptime tracker.
 - [x] Expose both tools via MCP and SSE servers (underscore names).
-- [ ] Tests for outputs.
+- [x] Tests for outputs.
 
 ## Notes
 

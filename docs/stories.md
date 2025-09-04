@@ -26,14 +26,21 @@
 | 008      | Undo tool                                         | Done        | /docs/stories/story-008-undo.md                    |
 | 009      | Git integration (commit+diff)                     | Done        | /docs/stories/story-009-git-integration.md         |
 | 010      | Anchors & validation rules                        | In Progress | /docs/stories/story-010-anchors-validation.md      |
-| 011      | Concurrency & idempotency                         | In Progress | /docs/stories/story-011-concurrency-idempotency.md |
+| 011      | Concurrency & idempotency                         | Done        | /docs/stories/story-011-concurrency-idempotency.md |
 | 012      | Auditing + rate limiting                          | Done        | /docs/stories/story-012-audit-rate-limit.md        |
-| 013      | Health & version tools                            | In Progress | /docs/stories/story-013-health-version.md          |
+| 013      | Health & version tools                            | Done        | /docs/stories/story-013-health-version.md          |
 | 014      | Formatting invariants (dates, line endings)       | In Progress | /docs/stories/story-014-formatting.md              |
 | 015      | Post-MVP: PreviewPlan + Search                    | To Do       | /docs/stories/story-015-post-mvp.md                |
-| 016      | Read-only mode                                    | In Progress | /docs/stories/story-016-readonly.md                |
-| 017      | Standardized error model                          | In Progress | /docs/stories/story-017-error-model.md             |
+| 016      | Read-only mode                                    | Done        | /docs/stories/story-016-readonly.md                |
+| 017      | Standardized error model                          | Done        | /docs/stories/story-017-error-model.md             |
 | 018      | Payload limits & validation                       | In Progress | /docs/stories/story-018-limits-validation.md       |
 | 019      | Example vault fixtures                            | In Progress | /docs/stories/story-019-example-vault.md           |
+| 020      | Write tools v2 (append/update/move/delete)        | Done        | /docs/stories/story-020-write-tools-v2.md          |
+| 021      | Remove legacy applyOps                            | To Do       | /docs/stories/story-021-remove-legacy-apply-ops.md |
+| 022      | MCP client compatibility (schemas)                | To Do       | /docs/stories/story-022-mcp-client-compat.md       |
+| 023      | AI_TESTING end-to-end hardening                   | To Do       | /docs/stories/story-023-ai-testing-hardening.md    |
+| 024      | Server config tool                                | Done        | /docs/stories/story-024-server-config.md           |
+| 025      | Head commit tool                                  | Done        | /docs/stories/story-025-head-commit.md             |
+| 026      | Reliable undo validation                          | To Do       | /docs/stories/story-026-undo-reliable.md           |
 
 ## Notes

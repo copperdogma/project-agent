@@ -31,9 +31,23 @@ async function verifyCommitExists(git: ReturnType<typeof simpleGit>, commit: str
 
 async function ensureCleanWorktree(git: ReturnType<typeof simpleGit>): Promise<void> {
   const st = await git.status();
-  if (!st.isClean()) {
-    throw new Error("WORKDIR_DIRTY: uncommitted changes present");
-  }
+  if (st.isClean()) return;
+  // Allow untracked/modified files only under .project-agent/**
+  const allow = (file: string) => file.startsWith(".project-agent/") || file === ".project-agent";
+  const untrackedOk = (st.files || []).every((f) => {
+    const p = f.path || "";
+    // If outside .project-agent, not okay
+    if (!allow(p)) return false;
+    return true;
+  });
+  const notStagedOk = (st.not_added || []).every((p) => allow(String(p)));
+  const createdOk = (st.created || []).every((p) => allow(String(p)));
+  const modifiedOk = (st.modified || []).every((p) => allow(String(p)));
+  const renamedOk = (st.renamed || []).every((r) => allow(String((r as any)?.to || "")) && allow(String((r as any)?.from || "")));
+  const deletedOk = (st.deleted || []).every((p) => allow(String(p)));
+
+  if (untrackedOk && notStagedOk && createdOk && modifiedOk && renamedOk && deletedOk) return;
+  throw new Error("WORKDIR_DIRTY: uncommitted changes present");
 }
 
 async function isMergeCommit(git: ReturnType<typeof simpleGit>, commit: string): Promise<boolean> {

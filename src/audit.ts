@@ -16,6 +16,22 @@ function auditLogPath(): string {
   const root = getVaultRoot();
   const dir = path.join(root, ".project-agent", "logs");
   fs.mkdirSync(dir, { recursive: true });
+  // Ensure .project-agent/.gitignore ignores app-generated artifacts to keep workdir clean
+  try {
+    const ignoreFile = path.join(root, ".project-agent", ".gitignore");
+    if (!fs.existsSync(ignoreFile)) {
+      const contents = [
+        "# Ignored app artifacts",
+        "logs/",
+        "idempotency/",
+        "*.lock",
+        "",
+      ].join("\n");
+      fs.writeFileSync(ignoreFile, contents, "utf8");
+    }
+  } catch {
+    // best effort
+  }
   return path.join(dir, "audit.jsonl");
 }
 

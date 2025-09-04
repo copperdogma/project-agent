@@ -30,21 +30,72 @@ export function registerProjectTools(mcpServer: McpServer): void {
     },
   );
 
+  // HEAD commit helper for clients that struggle passing expected_commit
+  mcpServer.registerTool(
+    "project_head_commit",
+    {
+      description: "Return the current git HEAD commit SHA for the vault repository (or null if repo unavailable).",
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        const { getVaultRoot, findGitRoot } = await import("../vault.js");
+        const { simpleGit } = await import("simple-git");
+        const root = getVaultRoot();
+        const repo = findGitRoot(root) || root;
+        const fs = await import("fs");
+        if (!fs.existsSync(`${repo}/.git`)) return { content: [{ type: "text", text: JSON.stringify({ head: null }) }] };
+        const git = simpleGit({ baseDir: repo });
+        const rev = (await git.revparse(["HEAD"]))?.trim() || null;
+        return { content: [{ type: "text", text: JSON.stringify({ head: rev || null }) }] };
+      } catch {
+        return { content: [{ type: "text", text: JSON.stringify({ head: null }) }] };
+      }
+    },
+  );
+
   mcpServer.registerTool(
     "project_get_document",
     {
       description: "Return full document content and metadata by slug.\n" +
-        "Fields: {frontmatter,content,path,size_bytes,current_commit,date_local,tz}. content is UTF-8 markdown.",
-      inputSchema: { slug: z.string() },
+        "Fields: {frontmatter,content,path,size_bytes,current_commit,date_local,tz}. content is UTF-8 markdown.\n" +
+        "Optional: suppressContent (boolean) to omit content, maxBytes (number) to truncate content.",
+      inputSchema: { slug: z.string(), suppressContent: z.boolean().optional(), maxBytes: z.number().optional() },
     },
     async (args: any) => {
       try {
         const slug = String(args?.slug || "");
         const payload = await getDocument(slug);
+        if (args?.suppressContent === true) {
+          (payload as any).content = "";
+        } else if (typeof args?.maxBytes === "number" && args.maxBytes > 0) {
+          const content: string = String((payload as any).content || "");
+          if (Buffer.byteLength(content, "utf8") > args.maxBytes) {
+            (payload as any).content = content.slice(0, args.maxBytes);
+          }
+        }
         return { content: [{ type: "text", text: JSON.stringify(payload) }] };
       } catch (err) {
         return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
       }
+    },
+  );
+
+  // Server config helper to surface environment toggles for tests
+  mcpServer.registerTool(
+    "server_config",
+    {
+      description: "Expose selected server settings: IDEMPOTENCY_TTL_S, READONLY, RATE_LIMIT_WRITE_MAX, RATE_LIMIT_WRITE_WINDOW_S.",
+      inputSchema: {},
+    },
+    async () => {
+      const cfg = {
+        IDEMPOTENCY_TTL_S: Number(process.env.IDEMPOTENCY_TTL_S ?? 3600),
+        READONLY: String(process.env.READONLY || "false").toLowerCase() === "true",
+        RATE_LIMIT_WRITE_MAX: Number(process.env.RATE_LIMIT_WRITE_MAX || 20),
+        RATE_LIMIT_WRITE_WINDOW_S: Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60),
+      };
+      return { content: [{ type: "text", text: JSON.stringify(cfg) }] };
     },
   );
 
@@ -72,20 +123,11 @@ export function registerProjectTools(mcpServer: McpServer): void {
         "Append: appends to tail of an EXISTING section only (MISSING_SECTION if unknown). Section creation is not yet supported.\n" +
         "Update/Delete/Move: locate lines by anchor, preserve or move the anchored line accordingly.\n" +
         "Dedup: append skips if exact text or normalized URL already exists in target section.\n" +
-        "Git: returns a real commit SHA when commit succeeds; returns commit:null when the repo is unavailable/busy (e.g., index.lock). The server retries briefly if an index.lock is present.",
-      inputSchema: {
-        slug: z.string(),
-        ops: z.array(
-          z.union([
-            z.object({ type: z.literal("append"), section: z.string(), text: z.string() }),
-            z.object({ type: z.literal("move_by_anchor"), anchor: z.string(), to_section: z.string() }),
-            z.object({ type: z.literal("update_by_anchor"), anchor: z.string(), new_text: z.string() }),
-            z.object({ type: z.literal("delete_by_anchor"), anchor: z.string() }),
-          ]),
-        ),
-        expected_commit: z.string().nullable().optional(),
-        idempotency_key: z.string().nullable().optional(),
-      },
+        "Git: returns a real commit SHA when commit succeeds; returns commit:null when the repo is unavailable/busy (e.g., index.lock). The server retries briefly if an index.lock is present.\n" +
+        "Optional: expected_commit for optimistic concurrency; idempotency_key for safe retries (TTL via IDEMPOTENCY_TTL_S).\n" +
+        "Examples: {slug, ops, expected_commit:\"<HEAD from project_snapshot>\"} for conflict checks; {slug, ops, idempotency_key:\"k1\"} for replay.",
+      // Use an empty schema to avoid client UI crashes on complex unions; server does strict validation
+      inputSchema: {},
     },
     async (args: any) => {
       try {
@@ -104,11 +146,136 @@ export function registerProjectTools(mcpServer: McpServer): void {
         const payload = await applyOps({
           slug: String(args?.slug || ""),
           ops: Array.isArray(args?.ops) ? (args.ops as any[]) : [],
-          expected_commit: args?.expected_commit ?? null,
-          idempotency_key: args?.idempotency_key ?? null,
+          expected_commit: (args?.expected_commit ?? args?.expectedCommit) ?? null,
+          idempotency_key: (args?.idempotency_key ?? args?.idempotencyKey) ?? null,
         });
         // Audit
         writeAudit({ ts: new Date().toISOString(), email, tool: "project_apply_ops", slug: String(args?.slug || ""), summary: payload.summary, commit: payload.commit });
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
+    },
+  );
+
+  // v2 simple write tools: append/update/move/delete
+  mcpServer.registerTool(
+    "project_append",
+    {
+      description: "Append a line to an existing section. Optional optimistic concurrency and idempotency.",
+      inputSchema: { slug: z.string(), section: z.string(), text: z.string(), expectedCommit: z.string().nullable().optional(), idempotencyKey: z.string().nullable().optional() },
+    },
+    async (args: any) => {
+      try {
+        const readonly = String(process.env.READONLY || "false").toLowerCase() === "true";
+        if (readonly) return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
+        const email = String(process.env.EMAIL_OVERRIDE || "anonymous");
+        const key = `${email}:${String(args?.slug || "")}`;
+        const cap = Number(process.env.RATE_LIMIT_WRITE_MAX || 20);
+        const windowSec = Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60);
+        if (!rateAllow(key, cap, windowSec)) return { content: [{ type: "text", text: JSON.stringify(makeError("RATE_LIMITED", "Write rate limit exceeded", { key })) }] };
+        const expectedCommit = (typeof args?.expectedCommit === "string" && args.expectedCommit.trim().length > 0) ? String(args.expectedCommit) : null;
+        const idempotencyKey = (typeof args?.idempotencyKey === "string" && args.idempotencyKey.trim().length > 0) ? String(args.idempotencyKey) : null;
+        const payload = await applyOps({
+          slug: String(args?.slug || ""),
+          ops: [{ type: "append", section: String(args?.section || ""), text: String(args?.text || "") }],
+          expected_commit: expectedCommit,
+          idempotency_key: idempotencyKey,
+        });
+        writeAudit({ ts: new Date().toISOString(), email, tool: "project_append", slug: String(args?.slug || ""), summary: payload.summary, commit: payload.commit });
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
+    },
+  );
+
+  mcpServer.registerTool(
+    "project_update_by_anchor",
+    {
+      description: "Update a line by anchor.",
+      inputSchema: { slug: z.string(), anchor: z.string(), newText: z.string(), expectedCommit: z.string().nullable().optional(), idempotencyKey: z.string().nullable().optional() },
+    },
+    async (args: any) => {
+      try {
+        const readonly = String(process.env.READONLY || "false").toLowerCase() === "true";
+        if (readonly) return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
+        const email = String(process.env.EMAIL_OVERRIDE || "anonymous");
+        const key = `${email}:${String(args?.slug || "")}`;
+        const cap = Number(process.env.RATE_LIMIT_WRITE_MAX || 20);
+        const windowSec = Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60);
+        if (!rateAllow(key, cap, windowSec)) return { content: [{ type: "text", text: JSON.stringify(makeError("RATE_LIMITED", "Write rate limit exceeded", { key })) }] };
+        const expectedCommit = (typeof args?.expectedCommit === "string" && args.expectedCommit.trim().length > 0) ? String(args.expectedCommit) : null;
+        const idempotencyKey = (typeof args?.idempotencyKey === "string" && args.idempotencyKey.trim().length > 0) ? String(args.idempotencyKey) : null;
+        const payload = await applyOps({
+          slug: String(args?.slug || ""),
+          ops: [{ type: "update_by_anchor", anchor: String(args?.anchor || ""), new_text: String(args?.newText || "") }],
+          expected_commit: expectedCommit,
+          idempotency_key: idempotencyKey,
+        });
+        writeAudit({ ts: new Date().toISOString(), email, tool: "project_update_by_anchor", slug: String(args?.slug || ""), summary: payload.summary, commit: payload.commit });
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
+    },
+  );
+
+  mcpServer.registerTool(
+    "project_move_by_anchor",
+    {
+      description: "Move a line identified by anchor to another section.",
+      inputSchema: { slug: z.string(), anchor: z.string(), toSection: z.string(), expectedCommit: z.string().nullable().optional(), idempotencyKey: z.string().nullable().optional() },
+    },
+    async (args: any) => {
+      try {
+        const readonly = String(process.env.READONLY || "false").toLowerCase() === "true";
+        if (readonly) return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
+        const email = String(process.env.EMAIL_OVERRIDE || "anonymous");
+        const key = `${email}:${String(args?.slug || "")}`;
+        const cap = Number(process.env.RATE_LIMIT_WRITE_MAX || 20);
+        const windowSec = Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60);
+        if (!rateAllow(key, cap, windowSec)) return { content: [{ type: "text", text: JSON.stringify(makeError("RATE_LIMITED", "Write rate limit exceeded", { key })) }] };
+        const expectedCommit = (typeof args?.expectedCommit === "string" && args.expectedCommit.trim().length > 0) ? String(args.expectedCommit) : null;
+        const idempotencyKey = (typeof args?.idempotencyKey === "string" && args.idempotencyKey.trim().length > 0) ? String(args.idempotencyKey) : null;
+        const payload = await applyOps({
+          slug: String(args?.slug || ""),
+          ops: [{ type: "move_by_anchor", anchor: String(args?.anchor || ""), to_section: String(args?.toSection || "") }],
+          expected_commit: expectedCommit,
+          idempotency_key: idempotencyKey,
+        });
+        writeAudit({ ts: new Date().toISOString(), email, tool: "project_move_by_anchor", slug: String(args?.slug || ""), summary: payload.summary, commit: payload.commit });
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
+    },
+  );
+
+  mcpServer.registerTool(
+    "project_delete_by_anchor",
+    {
+      description: "Delete a line by anchor.",
+      inputSchema: { slug: z.string(), anchor: z.string(), expectedCommit: z.string().nullable().optional(), idempotencyKey: z.string().nullable().optional() },
+    },
+    async (args: any) => {
+      try {
+        const readonly = String(process.env.READONLY || "false").toLowerCase() === "true";
+        if (readonly) return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
+        const email = String(process.env.EMAIL_OVERRIDE || "anonymous");
+        const key = `${email}:${String(args?.slug || "")}`;
+        const cap = Number(process.env.RATE_LIMIT_WRITE_MAX || 20);
+        const windowSec = Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60);
+        if (!rateAllow(key, cap, windowSec)) return { content: [{ type: "text", text: JSON.stringify(makeError("RATE_LIMITED", "Write rate limit exceeded", { key })) }] };
+        const expectedCommit = (typeof args?.expectedCommit === "string" && args.expectedCommit.trim().length > 0) ? String(args.expectedCommit) : null;
+        const idempotencyKey = (typeof args?.idempotencyKey === "string" && args.idempotencyKey.trim().length > 0) ? String(args.idempotencyKey) : null;
+        const payload = await applyOps({
+          slug: String(args?.slug || ""),
+          ops: [{ type: "delete_by_anchor", anchor: String(args?.anchor || "") }],
+          expected_commit: expectedCommit,
+          idempotency_key: idempotencyKey,
+        });
+        writeAudit({ ts: new Date().toISOString(), email, tool: "project_delete_by_anchor", slug: String(args?.slug || ""), summary: payload.summary, commit: payload.commit });
         return { content: [{ type: "text", text: JSON.stringify(payload) }] };
       } catch (err) {
         return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
