@@ -13,7 +13,7 @@
 
 ## Story List
 
-Priority (next → later): 010 → 019 → 015a → 015b → 027
+Priority (next → later): 019 → 015a → 015b → 027
 
 | Story ID | Title                                             | Status      | Link                                               |
 | -------- | ------------------------------------------------- | ----------- | -------------------------------------------------- |
@@ -27,7 +27,7 @@ Priority (next → later): 010 → 019 → 015a → 015b → 027
 | 007      | List tool                                         | Done        | /docs/stories/story-007-list.md                    |
 | 008      | Undo tool                                         | Done        | /docs/stories/story-008-undo.md                    |
 | 009      | Git integration (commit+diff)                     | Done        | /docs/stories/story-009-git-integration.md         |
-| 010      | Anchors & validation rules                        | In Progress | /docs/stories/story-010-anchors-validation.md      |
+| 010      | Anchors & validation rules                        | Done        | /docs/stories/story-010-anchors-validation.md      |
 | 011      | Concurrency & idempotency                         | Done        | /docs/stories/story-011-concurrency-idempotency.md |
 | 012      | Auditing + rate limiting                          | Done        | /docs/stories/story-012-audit-rate-limit.md        |
 | 013      | Health & version tools                            | Done        | /docs/stories/story-013-health-version.md          |
