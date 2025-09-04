@@ -41,6 +41,6 @@
 | 023      | AI_TESTING end-to-end hardening                   | Done        | /docs/stories/story-023-ai-testing-hardening.md    |
 | 024      | Server config tool                                | Done        | /docs/stories/story-024-server-config.md           |
 | 025      | Head commit tool                                  | Done        | /docs/stories/story-025-head-commit.md             |
-| 026      | Reliable undo validation                          | To Do       | /docs/stories/story-026-undo-reliable.md           |
+| 026      | Reliable undo validation                          | Done        | /docs/stories/story-026-undo-reliable.md           |
 
 ## Notes

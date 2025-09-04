@@ -1,6 +1,6 @@
 # Story: Reliable undo validation
 
-**Status**: To Do
+**Status**: Done
 
 ---
 
@@ -20,9 +20,9 @@
 
 ## Tasks
 
-- [ ] Keep `.project-agent/.gitignore` enforcement in write paths.
-- [ ] Ensure revert conflicts are surfaced with standardized error.
-- [ ] Update AI_TESTING to use dedicated append for undo.
+- [x] Keep `.project-agent/.gitignore` enforcement in write paths.
+- [x] Ensure revert conflicts are surfaced with standardized error.
+- [x] Update AI_TESTING to use dedicated append for undo.
 
 ## Notes
 

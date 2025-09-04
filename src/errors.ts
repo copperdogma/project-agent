@@ -51,6 +51,18 @@ export function errorFromException(err: unknown): StandardError {
   if (upper.startsWith("VALIDATION_ERROR")) {
     return makeError("VALIDATION_ERROR", message, {});
   }
+  if (upper.startsWith("NOT_A_REPO")) {
+    return makeError("NOT_FOUND", message, {});
+  }
+  if (upper.startsWith("NOT_FOUND_COMMIT")) {
+    return makeError("NOT_FOUND", message, {});
+  }
+  if (upper.startsWith("WORKDIR_DIRTY")) {
+    return makeError("CONFLICT", message, {});
+  }
+  if (upper.startsWith("REVERT_FAILED")) {
+    return makeError("CONFLICT", message, {});
+  }
   if (upper.startsWith("MISSING_SECTION")) {
     return makeError("VALIDATION_ERROR", message, {});
   }
