@@ -1,4 +1,10 @@
 export function deriveSlugFromTitle(title: string): string {
-  // Keep special characters except whitespace; normalize spaces to dashes and lowercase
-  return title.trim().replace(/\s+/g, "-").toLowerCase();
+  const trimmed = title.trim();
+  // Remove whitespace around runs of + or - to preserve contiguous markers (e.g., "+++ ---" => "+++---")
+  const tight = trimmed.replace(/\s*([+-]+)\s*/g, "$1");
+  // Replace remaining whitespace with dashes
+  const withDashes = tight.replace(/\s+/g, "-");
+  // Keep alphanumeric, plus, and minus; drop other punctuation
+  const filtered = withDashes.replace(/[^a-zA-Z0-9+\-]/g, "");
+  return filtered.toLowerCase();
 }

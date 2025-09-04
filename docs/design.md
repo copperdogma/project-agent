@@ -13,7 +13,7 @@
 
 ## Architecture Overview
 
-MCP server that edits Markdown files in the user's Obsidian vault via deterministic ops. Core tools: `project.snapshot`, `project.getDocument`, `project.applyOps`, `project.create`, `project.list`, `project.undo`, `server.health`, `server.version`, and post-MVP `project.previewPlan`/`project.search`. Preserve existing section order; use YYYYMMDD dates; anchors 6–8 base36.
+MCP server that edits Markdown files in the user's Obsidian vault via deterministic ops. Core tools: `project.snapshot`, `project.getDocument`, `project.create`, `project.list`, `project.append`, `project.update_by_anchor`, `project.move_by_anchor`, `project.delete_by_anchor`, `project.undo`, `server.health`, `server.version`, and helpers `server_config`, `project_head_commit`. Preserve existing section order; use YYYYMMDD dates; anchors 6–8 base36.
 
 ## Technology Stack
 
@@ -33,7 +33,7 @@ MCP server that edits Markdown files in the user's Obsidian vault via determinis
 
 - Error model: standardized codes `{code,message,details}`
 - Optimistic concurrency: `current_commit` + `expected_commit`
-- Idempotency: optional `idempotency_key` on applyOps
+- Idempotency: optional idempotency on write tools via `idempotencyKey`
 - Read-only mode: `READONLY=true` blocks writes
 - Auditing: JSONL audit under `.project-agent/logs/`
 - Rate limiting: per-email and per-slug throttles

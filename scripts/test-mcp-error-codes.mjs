@@ -28,13 +28,13 @@ async function run() {
 
   // 1) NOT_FOUND_ANCHOR via update with bogus anchor
   {
-    const res = await call("project_apply_ops", { slug: "test", ops: [{ type: "update_by_anchor", anchor: "^zzzzzz", new_text: "x" }] });
+    const res = await call("project_update_by_anchor", { slug: "test", anchor: "^zzzzzz", newText: "x" });
     if (!res.error || res.error.code !== "NOT_FOUND_ANCHOR") throw new Error("expected NOT_FOUND_ANCHOR");
   }
 
   // 2) VALIDATION_ERROR via missing section on append
   {
-    const res = await call("project_apply_ops", { slug: "test", ops: [{ type: "append", section: "Missing", text: "hello" }] });
+    const res = await call("project_append", { slug: "test", section: "Missing", text: "hello" });
     if (!res.error || res.error.code !== "VALIDATION_ERROR") throw new Error("expected VALIDATION_ERROR for missing section");
   }
 
@@ -42,7 +42,7 @@ async function run() {
   {
     const snap = await call("project_snapshot", { slug: "test" });
     const badExpected = snap.current_commit ? snap.current_commit + "dead" : "abcd";
-    const res = await call("project_apply_ops", { slug: "test", ops: [], expected_commit: badExpected });
+    const res = await call("project_append", { slug: "test", section: "Uncategorized", text: "noop", expectedCommit: badExpected });
     if (!res.error || res.error.code !== "CONFLICT") throw new Error("expected CONFLICT on expected_commit");
   }
 

@@ -1,6 +1,6 @@
 # Story: Remove legacy applyOps
 
-**Status**: To Do
+**Status**: Done
 
 ---
 
@@ -20,9 +20,9 @@
 
 ## Tasks
 
-- [ ] Delete registration and tests for legacy `apply_ops`.
-- [ ] Update docs (`requirements.md`, `design.md`) to reference v2 tools only.
-- [ ] Verify Claude Desktop can complete validation without legacy tool.
+- [x] Delete registration and tests for legacy `apply_ops`.
+- [x] Update docs (`requirements.md`, `design.md`) to reference v2 tools only.
+- [x] Verify Claude Desktop can complete validation without legacy tool.
 
 ## Notes
 

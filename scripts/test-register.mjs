@@ -9,8 +9,14 @@ async function run() {
     "project_list",
     "project_snapshot",
     "project_get_document",
-    "project_apply_ops",
     "project_create",
+    "project_append",
+    "project_update_by_anchor",
+    "project_move_by_anchor",
+    "project_delete_by_anchor",
+    "project_undo",
+    "project_head_commit",
+    "server_config",
   ];
 
   function extractToolNames(obj) {

@@ -112,51 +112,6 @@ export function registerProjectTools(mcpServer: McpServer): void {
     },
   );
 
-  mcpServer.registerTool(
-    "project_apply_ops",
-    {
-      description:
-        "Apply deterministic ops to a document (append/move/update/delete).\n" +
-        "Anchors: inline markers like ^abc123 (6–8 base36, optional -b on collision). Not line numbers.\n" +
-        "Missing anchors: operations referencing a non-existent anchor fail with MISSING_ANCHOR.\n" +
-        "Sections: Markdown headings (# .. ######). Ops target section bodies; section order is preserved.\n" +
-        "Append: appends to tail of an EXISTING section only (MISSING_SECTION if unknown). Section creation is not yet supported.\n" +
-        "Update/Delete/Move: locate lines by anchor, preserve or move the anchored line accordingly.\n" +
-        "Dedup: append skips if exact text or normalized URL already exists in target section.\n" +
-        "Git: returns a real commit SHA when commit succeeds; returns commit:null when the repo is unavailable/busy (e.g., index.lock). The server retries briefly if an index.lock is present.\n" +
-        "Optional: expected_commit for optimistic concurrency; idempotency_key for safe retries (TTL via IDEMPOTENCY_TTL_S).\n" +
-        "Examples: {slug, ops, expected_commit:\"<HEAD from project_snapshot>\"} for conflict checks; {slug, ops, idempotency_key:\"k1\"} for replay.",
-      // Use an empty schema to avoid client UI crashes on complex unions; server does strict validation
-      inputSchema: {},
-    },
-    async (args: any) => {
-      try {
-        const readonly = String(process.env.READONLY || "false").toLowerCase() === "true";
-        if (readonly) {
-          return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
-        }
-        // Rate limiting by email:slug if provided via env override; otherwise just slug
-        const email = String(process.env.EMAIL_OVERRIDE || "anonymous");
-        const key = `${email}:${String(args?.slug || "")}`;
-        const cap = Number(process.env.RATE_LIMIT_WRITE_MAX || 20);
-        const windowSec = Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60);
-        if (!rateAllow(key, cap, windowSec)) {
-          return { content: [{ type: "text", text: JSON.stringify(makeError("RATE_LIMITED", "Write rate limit exceeded", { key })) }] };
-        }
-        const payload = await applyOps({
-          slug: String(args?.slug || ""),
-          ops: Array.isArray(args?.ops) ? (args.ops as any[]) : [],
-          expected_commit: (args?.expected_commit ?? args?.expectedCommit) ?? null,
-          idempotency_key: (args?.idempotency_key ?? args?.idempotencyKey) ?? null,
-        });
-        // Audit
-        writeAudit({ ts: new Date().toISOString(), email, tool: "project_apply_ops", slug: String(args?.slug || ""), summary: payload.summary, commit: payload.commit });
-        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
-      } catch (err) {
-        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
-      }
-    },
-  );
 
   // v2 simple write tools: append/update/move/delete
   mcpServer.registerTool(
@@ -329,10 +284,10 @@ export function registerProjectTools(mcpServer: McpServer): void {
     {
       description:
         "Undo (revert) a commit in the vault git repository.\n" +
-        "Commit discovery: use commit hashes from applyOps responses (commit), or the current_commit in snapshot/getDocument; you can also view git log externally (a history tool may arrive later).\n" +
+        "Commit discovery: use commit hashes returned by write tools (e.g., project_append), or the current_commit in snapshot/getDocument; you can also view git log externally (a history tool may arrive later).\n" +
         "Scope: reverts ONLY the specified commit (later commits remain); this creates a new revert commit (no history rewrite). You can revert the revert if needed.\n" +
         "Preconditions: worktree must be clean; merge commits are not supported (MERGE_COMMIT_NOT_SUPPORTED).\n" +
-        "Usage: (1) Ensure no uncommitted changes; (2) Pick a non-merge commit hash (e.g., from applyOps.commit); (3) Call project_undo with {commit}.\n" +
+        "Usage: (1) Ensure no uncommitted changes; (2) Pick a non-merge commit hash (e.g., from write tool responses); (3) Call project_undo with {commit}.\n" +
         "Errors: NOT_A_REPO when vault is not a git repo; NOT_FOUND_COMMIT when the commit is unknown; WORKDIR_DIRTY when uncommitted changes exist; REVERT_FAILED on conflicts.\n" +
         "Return: JSON {revert_commit:string|null, diff:string} where diff is git unified diff for that revert commit (commit^!).\n" +
         "Example input: {\"commit\":\"abc123...\"}. Example output: {\"revert_commit\":\"def456...\",\"diff\":\"diff --git ...\"}",

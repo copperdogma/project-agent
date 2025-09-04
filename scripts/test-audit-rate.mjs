@@ -28,11 +28,11 @@ async function run() {
   }
 
   // 1) Two writes should pass; third should be RATE_LIMITED
-  const ok1 = await call("project_apply_ops", { slug: "test", ops: [{ type: "append", section: "Uncategorized", text: "x" }] });
+  const ok1 = await call("project_append", { slug: "test", section: "Uncategorized", text: "x" });
   if (ok1.error) throw new Error("first write unexpectedly failed");
-  const ok2 = await call("project_apply_ops", { slug: "test", ops: [{ type: "append", section: "Uncategorized", text: "y" }] });
+  const ok2 = await call("project_append", { slug: "test", section: "Uncategorized", text: "y" });
   if (ok2.error) throw new Error("second write unexpectedly failed");
-  const limited = await call("project_apply_ops", { slug: "test", ops: [{ type: "append", section: "Uncategorized", text: "z" }] });
+  const limited = await call("project_append", { slug: "test", section: "Uncategorized", text: "z" });
   if (!limited.error || limited.error.code !== "RATE_LIMITED") throw new Error("expected RATE_LIMITED on third write");
 
   // 2) Audit file exists and contains entries

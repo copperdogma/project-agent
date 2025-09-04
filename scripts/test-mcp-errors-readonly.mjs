@@ -41,8 +41,8 @@ async function run() {
   // 2) Read-only guards on write tools
   process.env.READONLY = "true";
   {
-    const res = await call("project_apply_ops", { slug: "test", ops: [] });
-    if (!res.error || res.error.code !== "READ_ONLY") throw new Error("expected READ_ONLY from apply_ops");
+    const res = await call("project_append", { slug: "test", section: "Uncategorized", text: "x" });
+    if (!res.error || res.error.code !== "READ_ONLY") throw new Error("expected READ_ONLY from project_append");
   }
   {
     const res = await call("project_create", { title: "X" });

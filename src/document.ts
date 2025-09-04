@@ -41,12 +41,14 @@ function findFileBySlug(slug: string, vaultRoot: string): string | null {
         const fmSlug = (frontmatter.slug || (frontmatter as any).Slug || "").trim();
         const fmTitle = (frontmatter.title || (frontmatter as any).Title || "").trim();
         const fileBase = path.basename(entry, ".md");
-        const candidates = new Set<string>([
+        const candidates = [
           fmSlug,
           deriveSlugFromTitle(fmTitle || fileBase),
           deriveSlugFromTitle(fileBase),
-        ].filter(Boolean) as string[]);
-        if (candidates.has(slug)) {
+        ].filter(Boolean) as string[];
+        const slugNorm = String(slug || "").trim().toLowerCase();
+        const match = candidates.some((c) => String(c).trim().toLowerCase() === slugNorm);
+        if (match) {
           return abs;
         }
       } catch {}
