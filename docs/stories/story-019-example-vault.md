@@ -20,11 +20,13 @@
 
 ## Tasks
 
-- [ ] Create minimal example vault structure.
-- [ ] Include sample project doc with all sections and anchors.
-- [ ] Document how to switch via VAULT_ROOT.
-- [ ] Wire fixtures into tests and CI.
+- [x] Create minimal example vault structure.
+- [x] Include sample project doc with all sections and anchors.
+- [x] Document how to switch via VAULT_ROOT.
+- [x] Wire fixtures into tests and CI.
 
 ## Notes
 
 - Tests currently use temporary vaults; fixtures will improve reproducibility.
+- Fixtures path: `fixtures/example-vault/`.
+- Test: `scripts/test-fixtures.mjs`. README updated with usage.

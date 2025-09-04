@@ -28,6 +28,16 @@ Roadmap (per `/docs/requirements.md`): project.snapshot, project.getDocument, pr
 
 - `project.snapshot`: Lightweight summary (frontmatter, toc, per-section tails, anchors index, recent ops, current_commit, date/tz).
 - `project.getDocument`: Full Markdown content with frontmatter, path, size, current_commit.
+
+## Example Vault Fixtures
+
+For demos and deterministic tests, you can point the server/tools at a bundled fixtures vault:
+
+```
+export VAULT_ROOT=$(pwd)/fixtures/example-vault
+```
+
+Then run any scripts or start the server; tools will read from the fixtures vault.
 - `project.create`: Create new project doc with initial sections and frontmatter; registers in `projects.yaml`.
 - `project.list`: List known projects from registry.
 - `project.append` / `project.update_by_anchor` / `project.move_by_anchor` / `project.delete_by_anchor`: Deterministic edits; optional `expectedCommit` and `idempotencyKey`.
