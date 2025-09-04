@@ -46,6 +46,6 @@ Priority (next → later): 027 → 028
 | 025      | Head commit tool                                  | Done        | /docs/stories/story-025-head-commit.md             |
 | 026      | Reliable undo validation                          | Done        | /docs/stories/story-026-undo-reliable.md           |
 | 027      | Tool catalog docs (schemas & examples)            | To Do       | /docs/stories/story-027-tool-catalog.md            |
-| 028      | Write AI Project instructions + tool overview            | To Do       |             |
+| 028      | AI Project system prompt + tool overview           | To Do       | /docs/stories/story-028-ai-project-prompt.md       |
 
 ## Notes
