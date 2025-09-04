@@ -29,8 +29,12 @@ async function run() {
 
   mod = await import(new URL("../dist/list.js", import.meta.url));
   list = mod.listProjects();
-  if (list.length !== 2) throw new Error("registry list size");
-  if (list[0].title !== "Alpha") throw new Error("registry sort order");
+  // After registry present, we should merge registry and filesystem entries
+  if (!Array.isArray(list) || list.length < 4) throw new Error("registry+scan merged list size");
+  const titles = list.map((x) => x.title);
+  if (!(titles[0] === "Alpha" && titles.includes("Zeta") && titles.includes("One") && titles.includes("Two"))) {
+    throw new Error("merged contents or sort order incorrect");
+  }
 
   fs.rmSync(tmpRoot, { recursive: true, force: true });
   // eslint-disable-next-line no-console
