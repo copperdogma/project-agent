@@ -22,16 +22,20 @@ npm run generate:certs
 # then set TLS_CERT_PATH and TLS_KEY_PATH in .env
 ```
 
-Roadmap (per `/docs/requirements.md`): project.snapshot, project.getDocument, project.applyOps, project.create, project.list, project.undo; deterministic ops + git diff; standardized errors; audit + rate limiting; post-MVP: previewPlan/search.
+Roadmap (per `/docs/requirements.md`): project.snapshot, project.getDocument, project.create, project.list, write tools (append/update_by_anchor/move_by_anchor/delete_by_anchor), project.undo; deterministic ops + git diff; standardized errors; audit + rate limiting; post-MVP: previewPlan/search.
 
-## MCP tools (planned/available)
+## MCP tools (available)
 
-- `project.snapshot` (planned): Lightweight summary (frontmatter, toc, per-section tails, anchors index, recent ops, current_commit, date/tz).
-- `project.getDocument` (planned): Full Markdown content with frontmatter, path, size, current_commit.
-- `project.applyOps` (planned): Deterministic append/move/update/delete by anchor; returns commit, diff, summary. Supports `expected_commit` and optional `idempotency_key`.
-- `project.create` (planned): Create new project doc with initial sections and frontmatter; registers in `projects.yaml`.
-- `project.list` (planned): List known projects from registry.
-- `project.undo` (planned): Revert by commit, return revert commit and diff.
+- `project.snapshot`: Lightweight summary (frontmatter, toc, per-section tails, anchors index, recent ops, current_commit, date/tz).
+- `project.getDocument`: Full Markdown content with frontmatter, path, size, current_commit.
+- `project.create`: Create new project doc with initial sections and frontmatter; registers in `projects.yaml`.
+- `project.list`: List known projects from registry.
+- `project.append` / `project.update_by_anchor` / `project.move_by_anchor` / `project.delete_by_anchor`: Deterministic edits; optional `expectedCommit` and `idempotencyKey`.
+- `project.undo`: Revert by commit, return revert commit and diff.
+- `server.health`: Uptime/status check.
+- `server.version`: App name/version and schema version.
+- `server_config`: Reveal server env (e.g., IDEMPOTENCY_TTL_S, READONLY).
+- `project_head_commit`: Return HEAD commit SHA for concurrency tests.
 - `server.health` (available): Uptime/status check.
 - `server.version` (available): App name/version and schema version.
 - `project.previewPlan` (post-MVP): Dry-run validation.

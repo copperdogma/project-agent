@@ -115,28 +115,16 @@ Line formats:
 
 ### **3)** 
 
-### **project.applyOps**
+### **Write tools (v2)**
 
-**Purpose:** Deterministically apply LLM-planned ops and return a diff.
+**Purpose:** Deterministically apply simple edits with client-friendly schemas.
 
-- **input:**
+- project.append input: { slug: string; section: string; text: string; expectedCommit?: string; idempotencyKey?: string }
+- project.update_by_anchor input: { slug: string; anchor: string; newText: string; expectedCommit?: string; idempotencyKey?: string }
+- project.move_by_anchor input: { slug: string; anchor: string; toSection: string; expectedCommit?: string; idempotencyKey?: string }
+- project.delete_by_anchor input: { slug: string; anchor: string; expectedCommit?: string; idempotencyKey?: string }
 
-```
-{
-  "slug": "storybook",
-  "ops": [
-    {"op":"append","section":"Resources","lines":["- Title — URL 20250831 ai: ^r1"]},
-    {"op":"move_by_anchor","anchor":"^abc123","to_section":"Ideas"},
-    {"op":"update_by_anchor","anchor":"^t9u7w0","replace_with_lines":["- [ ] ... ^t9u7w0"]},
-    {"op":"delete_by_anchor","anchor":"^deadbe"}
-  ],
-  "expected_commit": "abcd123",            // optional optimistic concurrency
-  "idempotency_key": "random-uuid-123"     // optional safe-retry key
-}
-```
-
-- **behavior:** preserve existing section order (no reordering). Create sections if missing when referenced, never touch lines without anchors, apply per-file locking, and commit via git.
-- **output:** { "commit": "abcd123", "summary": "+Resources(1), move(1)", "diff": "unified diff…" , "primary_anchors": ["^r1"] }
+Behavior: preserve existing section order (no reordering). Per-file locking and git commit. Output: { commit, diff, summary, primaryAnchors, currentCommit }.
 
 ### **4)**
 
@@ -224,7 +212,7 @@ Line formats:
 - Always call:
   1. project.snapshot(slug). If full context is needed, call project.getDocument(slug).
   2. Produce **JSON ops** plan (append/move/update/delete/create_project) using the snapshot.
-  3. Call project.applyOps (or project.create) and return the **diff/summary**.
+  3. Call write tools (append/update/move/delete) or project.create and return the **diff/summary**.
 - If content is ambiguous/low-confidence, **route to Uncategorized** (top).
 - Every added/updated line must include date prefix and a unique anchor ^id (6–8 base36).
   (Server will suffix -b if collision.)
@@ -299,8 +287,8 @@ Canonical error codes: `UNAUTHORIZED`, `FORBIDDEN_EMAIL`, `NOT_FOUND_ANCHOR`, `V
 5. **Create+apply:** fresh project created with required sections and formats; existing documents are not mutated structurally.
 6. **Undo:** project.undo reverts prior commit cleanly.
 7. **Full document access:** project.getDocument returns the entire Markdown with frontmatter and content.
-8. **Optimistic concurrency:** applyOps rejects stale writes when `expected_commit` mismatches the latest commit.
-9. **Idempotency:** repeated applyOps with the same `idempotency_key` are safe no-ops.
+8. **Optimistic concurrency:** write tools reject stale writes when `expectedCommit` mismatches the latest commit.
+9. **Idempotency:** repeated writes with the same `idempotencyKey` are safe replays.
 10. **Read-only mode:** when `READONLY=true`, write tools return `READ_ONLY`.
 11. **Auditing:** every write produces an audit entry (timestamp, email, slug, summary, commit).
 12. **Rate limiting:** write operations are throttled per email and per slug per configured limits.

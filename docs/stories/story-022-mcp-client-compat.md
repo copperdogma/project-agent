@@ -1,6 +1,6 @@
 # Story: MCP client compatibility (schemas)
 
-**Status**: To Do
+**Status**: Done
 
 ---
 
@@ -21,10 +21,10 @@
 
 ## Tasks
 
-- [ ] Review all tool schemas; flatten and simplify.
-- [ ] Add runtime type guards for optional fields (strings or null).
-- [ ] Update docs and examples to camelCase.
-- [ ] Validate with Claude Desktop end-to-end.
+- [x] Review all tool schemas; flatten and simplify.
+- [x] Add runtime type guards for optional fields (strings or null).
+- [x] Update docs and examples to camelCase.
+- [x] Validate with Claude Desktop end-to-end.
 
 ## Notes
 

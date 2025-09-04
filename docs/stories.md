@@ -37,7 +37,7 @@
 | 019      | Example vault fixtures                            | In Progress | /docs/stories/story-019-example-vault.md           |
 | 020      | Write tools v2 (append/update/move/delete)        | Done        | /docs/stories/story-020-write-tools-v2.md          |
 | 021      | Remove legacy applyOps                            | Done        | /docs/stories/story-021-remove-legacy-apply-ops.md |
-| 022      | MCP client compatibility (schemas)                | To Do       | /docs/stories/story-022-mcp-client-compat.md       |
+| 022      | MCP client compatibility (schemas)                | Done        | /docs/stories/story-022-mcp-client-compat.md       |
 | 023      | AI_TESTING end-to-end hardening                   | To Do       | /docs/stories/story-023-ai-testing-hardening.md    |
 | 024      | Server config tool                                | Done        | /docs/stories/story-024-server-config.md           |
 | 025      | Head commit tool                                  | Done        | /docs/stories/story-025-head-commit.md             |
