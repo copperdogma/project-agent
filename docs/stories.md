@@ -13,7 +13,7 @@
 
 ## Story List
 
-Priority (next → later): 015b → 027
+Priority (next → later): 027 → 028
 
 | Story ID | Title                                             | Status      | Link                                               |
 | -------- | ------------------------------------------------- | ----------- | -------------------------------------------------- |
@@ -33,7 +33,7 @@ Priority (next → later): 015b → 027
 | 013      | Health & version tools                            | Done        | /docs/stories/story-013-health-version.md          |
 | 014      | Formatting invariants (dates, line endings)       | Done        | /docs/stories/story-014-formatting.md              |
 | 015a     | Post-MVP: Preview (dry-run)                       | Done        | /docs/stories/story-015a-preview.md                |
-| 015b     | Post-MVP: Search                                  | To Do       | /docs/stories/story-015b-search.md                 |
+| 015b     | Post-MVP: Search                                  | Done        | /docs/stories/story-015b-search.md                 |
 | 016      | Read-only mode                                    | Done        | /docs/stories/story-016-readonly.md                |
 | 017      | Standardized error model                          | Done        | /docs/stories/story-017-error-model.md             |
 | 018      | Payload limits & validation                       | Done        | /docs/stories/story-018-limits-validation.md       |

@@ -1,6 +1,6 @@
 # Story: Post-MVP Search
 
-**Status**: To Do
+**Status**: Done
 
 ---
 
@@ -20,9 +20,9 @@
 
 ## Tasks
 
-- [ ] Implement search with simple tokenization
-- [ ] Support scope=section and anchors index scan
-- [ ] Add limits and tests
+- [x] Implement search with simple tokenization
+- [x] Support scope=section and anchors index scan
+- [x] Add limits and tests
 
 ## Notes
 

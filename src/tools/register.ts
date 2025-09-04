@@ -4,6 +4,7 @@ import { buildSnapshot } from "../snapshot.js";
 import { getDocument } from "../document.js";
 import { listProjects } from "../list.js";
 import { applyOps, previewOps } from "../apply.js";
+import { searchInDocument } from "../search.js";
 import { createProject } from "../create.js";
 import { undoCommit } from "../undo.js";
 import { errorFromException, makeError } from "../errors.js";
@@ -11,6 +12,28 @@ import { writeAudit } from "../audit.js";
 import { allow as rateAllow } from "../rate.js";
 
 export function registerProjectTools(mcpServer: McpServer): void {
+  mcpServer.registerTool(
+    "project_search",
+    {
+      description: "Search within a project document by case-insensitive substring. Returns section, optional anchor, and excerpt.",
+      inputSchema: { slug: z.string(), query: z.string(), scope: z.enum(["all", "section"]).optional(), section: z.string().optional() },
+    },
+    async (args: any) => {
+      try {
+        const base: any = {
+          slug: String(args?.slug || ""),
+          query: String(args?.query || ""),
+          scope: (args?.scope === "section" ? "section" : "all") as any,
+        };
+        if (args?.section !== undefined) base.section = String(args.section);
+        const payload = await searchInDocument(base);
+        return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
+    },
+  );
+
   mcpServer.registerTool(
     "project_preview",
     {
