@@ -11,7 +11,11 @@ You are connected to an MCP server that exposes project tools. Please run a full
 - Keep a running checklist and end with a concise pass/fail summary.
 - IMPORTANT:
   - Prefer camelCase fields for optional parameters: `expectedCommit`, `idempotencyKey`.
-  - Omit these fields if you don't need them; if you include them, send non-empty strings. Avoid explicit `null` values in the UI form.
+  - Always use the raw JSON input editor when passing optional fields to avoid clients silently sending `null`.
+  - Omit optional fields if you don't need them; if you include them, send non-empty strings. Never send `null`.
+  - For idempotency replay: repeat the EXACT same input as the first call and reuse the identical non-empty `idempotencyKey`; do not include `expectedCommit` in the replay step.
+  - For concurrency tests: `expectedCommit` must be a non-empty string taken from a snapshot captured BEFORE advancing head. Use camelCase `expectedCommit`.
+  - Idempotency requires `IDEMPOTENCY_TTL_S > 0` on the server.
   - The server also accepts snake_case (`expected_commit`, `idempotency_key`), but camelCase is recommended.
 
 Variables you will create and use:
@@ -40,9 +44,9 @@ Step 2a — Preview (dry-run)
 8) Call project_preview with:
    { "slug": "<slug_main>", "opsJson": "[{\\"type\\":\\"append\\",\\"section\\":\\"Notes\\",\\"text\\":\\"Preview validation line\\"}]" }
    - Assert response has { ok: true, would_change: true } and notes includes an item starting with "append:" or dedup.
-   - To demonstrate dedup within preview, send a single batch with two identical appends so the second is skipped in the same dry-run:
+   - To demonstrate dedup within preview, send a single batch with two IDENTICAL appends (same `section` and `text`) so the second is skipped in the SAME dry-run:
      { "slug": "<slug_main>", "opsJson": "[{\"type\":\"append\",\"section\":\"Notes\",\"text\":\"Preview validation line\"},{\"type\":\"append\",\"section\":\"Notes\",\"text\":\"Preview validation line\"}]" }
-     - Assert notes contains an item starting with "append_skipped_dedup:".
+     - Assert `notes` contains an item starting with `append_skipped_dedup:` and `would_change` is true.
 
 Step 2b — Search within document
 9) Call project_search with { slug: "<slug_main>", query: "validation" }.
@@ -50,14 +54,14 @@ Step 2b — Search within document
    - Optionally: scope a section with { scope: "section", section: "Notes" } and assert matches are from that section only.
 
 Step 3 — Basic append (v2 tool)
-10) Call project_append with input (paste only the input object in your client):
+10) Call project_append with input (paste only the input object in your client raw JSON editor):
    { "slug": "<slug_main>", "section": "Notes", "text": "Validation line 1", "expectedCommit": "<stale_commit>", "idempotencyKey": "validation-key-1" }
    - Assert summary contains a string starting with "append:".
    - Save primary_anchors[0] into anchor1 (if present) and save commit into commit1 (may be null).
    - If diff is available (repo present), assert it contains a '+'.
 
 Step 4 — Idempotency replay
-11) Call project_append again, same input as Step 10 but you can omit expectedCommit:
+11) Call project_append again with the EXACT SAME input as Step 10 but omit `expectedCommit` and reuse the identical `idempotencyKey`:
    { "slug": "<slug_main>", "section": "Notes", "text": "Validation line 1", "idempotencyKey": "validation-key-1" }
    - Assert summary includes "idempotent_replay".
    - Assert commit is equal to the previously stored commit1 (when commit1 is non-null). Assert diff is empty string.
@@ -82,14 +86,14 @@ Step 6 — Dedup behavior
    - Assert summary includes an item starting with "append_skipped_dedup:" indicating dedup worked.
 
 Step 7 — Concurrency conflict (optimistic concurrency)
-15) Capture a stale commit via snapshot.current_commit saved earlier (stale_commit). If stale_commit is null, skip this step.
+15) Capture a stale commit via `snapshot.current_commit` BEFORE advancing head (stale_commit). If `stale_commit` is null, skip this step.
 16) Advance head (no expectedCommit):
    { "slug": "<slug_main>", "section": "Notes", "text": "Advance head" }  // project_append
-17) Trigger conflict using stale expectedCommit:
-   { "slug": "<slug_main>", "section": "Notes", "text": "Should conflict", "expectedCommit": "<fresh_head>" }  // project_append
+17) Trigger conflict using `stale_commit` as `expectedCommit` (non-empty string, camelCase):
+   { "slug": "<slug_main>", "section": "Notes", "text": "Should conflict", "expectedCommit": "<stale_commit>" }
     - Expect a conflict. The tool returns a JSON error payload; parse and assert error.code == "CONFLICT" or message contains "CONFLICT_EXPECTED_COMMIT".
-    - If you send expected_commit as a non-string (e.g., object/number), the server returns VALIDATION_ERROR.
-    - If your client UI does not expose optional fields, switch to the raw JSON input and include "expectedCommit" as a non-empty string.
+    - If you send `expectedCommit` (or `expected_commit`) as non-string/empty, server returns `VALIDATION_ERROR`.
+    - If UI hides optional fields, switch to raw JSON and include `expectedCommit` explicitly as a non-empty string.
 
 Alternate approach if you need a fresh stale commit
 15b) Call project_snapshot again to capture stale_commit2 = current_commit.
@@ -99,6 +103,7 @@ Alternate approach if you need a fresh stale commit
     - Expect a conflict as above.
 
 Step 8 — Undo (dedicated, conflict-free)
+Precondition: Ensure the vault repo is clean to avoid WORKDIR_DIRTY (run `git -C <vault> status`), or treat conflicts as an allowed skip.
 16) Create a dedicated change to undo:
     - Call project_append with:
       { "slug": "<slug_main>", "section": "Notes", "text": "Undo test line" }

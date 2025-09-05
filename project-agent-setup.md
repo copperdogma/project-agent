@@ -14,9 +14,17 @@ Works non-interactively, idempotently, and persists across reboots.
 - Unauthenticated endpoints for verification: `GET /version`, `GET /health`
 - Authentication for other routes uses `DEV_BEARER_TOKEN` and `x-user-email` in `EMAIL_ALLOWLIST`
 
-## Optional: Tailscale
-- Install and log in to Tailscale so the machine has a tailnet IP (100.64.0.0/10).
-- If using an auth key for unattended login, set `TS_AUTHKEY` and run: `sudo tailscale up --authkey "$TS_AUTHKEY"`.
+Note on macOS privacy (TCC): if your vault is under `~/Documents`, a root LaunchDaemon may get EPERM. Run the daemon as the target user (e.g., `occam`) to ensure access.
+
+## Networking: Tailscale (Tailnet + Public HTTPS)
+- Install the Tailscale CLI and log in so the machine has a tailnet IP (100.64.0.0/10):
+  ```bash
+  brew install tailscale
+  sudo tailscale up         # follow login flow in browser
+  tailscale status | cat
+  ```
+- If using an auth key for unattended login: `sudo tailscale up --authkey "$TS_AUTHKEY"`.
+- Do NOT symlink `/Applications/Tailscale.app/...` to `tailscale`; use the Homebrew CLI above to avoid bundle errors.
 
 ## One‑time Bootstrap (copy/paste)
 Run these commands in Terminal. They tolerate repeated runs and will fix most issues automatically.
@@ -77,6 +85,7 @@ cat > /tmp/com.projectagent.mcp.plist <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>com.projectagent.mcp</string>
+  <key>UserName</key><string>occam</string>
   <key>WorkingDirectory</key><string>${APP_DIR}</string>
   <key>ProgramArguments</key>
   <array>
@@ -88,7 +97,8 @@ cat > /tmp/com.projectagent.mcp.plist <<PLIST
     <key>PATH</key><string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
     <key>VAULT_ROOT</key><string>${VAULT_DIR}</string>
     <key>PORT</key><string>7777</string>
-    <key>HOST</key><string>0.0.0.0</string>
+    <!-- For public HTTPS via Serve/Funnel, bind to loopback only -->
+    <key>HOST</key><string>127.0.0.1</string>
     <key>READONLY</key><string>false</string>
     <key>DEV_BEARER_TOKEN</key><string>set-a-strong-token</string>
     <key>EMAIL_ALLOWLIST</key><string>you@example.com</string>
@@ -164,7 +174,7 @@ if command -v tailscale >/dev/null 2>&1; then
 fi
 ```
 
-## Remote Reachability (from another tailnet device)
+## Remote Reachability (tailnet-only)
 Tailnet HTTPS via Serve (optional):
 ```bash
 curl https://<device-name>.<tailnet>.ts.net/version
@@ -185,7 +195,7 @@ curl -H "Authorization: Bearer set-a-strong-token" -H "x-user-email: you@example
 - Public HTTPS without port-forwarding: use Tailscale Funnel or Cloudflare Tunnel.
 - Public HTTPS with your own domain/server: use a reverse proxy (Caddy/Nginx) with Let's Encrypt.
 
-### Option A — Tailnet HTTPS via Tailscale Serve (recommended if you only need tailnet access)
+### Option A — Tailnet HTTPS via Tailscale Serve (tailnet access only)
 Expose the app at an HTTPS URL on your tailnet (MagicDNS), terminated by Tailscale.
 
 Requirements: Tailscale app running and logged in. Newer CLI uses the simplified `serve` syntax shown below.
@@ -215,25 +225,41 @@ Notes:
 - The `--yes` and `--bg` flags must precede the target on this CLI.
 - If you see “Serve is not enabled on your tailnet…”, open the printed approval link, enable only HTTPS, then rerun the command.
 
-### Option B — Public HTTPS via Tailscale Funnel
-This makes the same `tailscale serve` site reachable from the public Internet with a valid TLS cert, no firewall/NAT changes.
+### Option B — Public HTTPS via Tailscale Funnel (recommended for Claude)
+Expose the same Serve site publicly with valid TLS under `*.ts.net` (no ports/NAT).
 
-Requirements: Tailscale Funnel enabled for your tailnet (admin console). Complete Option A first.
+Requirements:
+- Tailscale CLI installed and device logged in (see above)
+- Tailnet policy grants the `funnel` attribute (Access Controls → Policy file):
+  ```json
+  "nodeAttrs": [ { "target": ["autogroup:members"], "attr": ["funnel"] } ]
+  ```
 
 Commands:
 ```bash
-# Turn on Funnel for the served site
-tailscale funnel on
+# 1) Start Serve (idempotent); approve HTTPS if prompted
+tailscale serve --bg 127.0.0.1:7777
+tailscale serve --yes --bg 127.0.0.1:7777
 
-# Check status
-tailscale funnel status
+# 2) Enable Funnel (public)
+tailscale funnel --bg 127.0.0.1:7777
+
+# 3) Verify
+tailscale funnel status | cat
+# Example success:
+# Available on the internet:
+# https://the-octagon.tailXXXX.ts.net/
+# |-- proxy http://127.0.0.1:7777
 ```
 
-Access:
-- Public HTTPS URL will match your device/tailnet name under `ts.net`.
+Public access test (from non-tailnet, e.g., LTE):
+```bash
+curl -sS https://<device-name>.<tailnet>.ts.net/version | cat
+```
 
 Notes:
-- Keep auth in your app (bearer token + allowlist) since Funnel makes it public.
+- A minor `client version != tailscaled version` warning is safe to ignore.
+- Keep your app’s auth in place since this is public.
 
 ### Option C — Public HTTPS via Cloudflare Tunnel (no open ports)
 This maps a custom domain to the local service over an outbound tunnel.
@@ -286,7 +312,19 @@ Use if you control DNS and can forward ports 80/443 to this Mac.
   ```
 
 Hardening tip:
-- If using a local reverse proxy (Caddy/Nginx/Cloudflare Tunnel), set `HOST=127.0.0.1` in `/Library/LaunchDaemons/com.projectagent.mcp.plist` so the app is only reachable via the proxy.
+- If using Serve/Funnel/Cloudflare, set `HOST=127.0.0.1` (already configured above) so the app is only reachable via the proxy.
+
+## Connect Claude Desktop (SSE)
+1) Ensure public HTTPS works (Funnel or another reverse proxy):
+   - `curl -isk https://<device>.<tailnet>.ts.net/version`
+   - `curl -iskN https://<device>.<tailnet>.ts.net/sse` (you should see an initial `event: endpoint`)
+2) In Claude Desktop → Settings → Developer → MCP Servers → Add custom connector:
+   - Name: Project Agent
+   - URL: `https://<device>.<tailnet>.ts.net/sse`
+   - Leave OAuth fields empty
+3) Click Add, then Connect. On the Mac mini, watch logs:
+   - `sudo tail -f /var/log/project-agent.out.log`
+   - You should see: GET `/sse` ("sse session registered"), followed by POST `/sse` ("forwarded to transport").
 
 ## Troubleshooting
 - EX_CONFIG (78) after `load`:
@@ -296,9 +334,9 @@ Hardening tip:
   - Launchd status: `sudo launchctl print system/com.projectagent.mcp | sed -n '1,200p'`.
   - Launchd events: `log show --last 15m --predicate 'process == "launchd" && eventMessage CONTAINS "com.projectagent.mcp"'`.
 - Service not listening on 0.0.0.0:
-  - For LAN/tailnet HTTP (default): keep `HOST=0.0.0.0` in the plist.
-  - For Tailnet HTTPS via Serve only: set `HOST=127.0.0.1` and use `tailscale serve` (see section above).
-  - The codebase (src/index.ts) reads `HOST` and passes it to Fastify `.listen({ port, host })`. Rebuild with `npm run build` if you updated sources.
+  - For LAN/tailnet HTTP access, set `HOST=0.0.0.0` in the plist and reload.
+  - For Serve/Funnel/Cloudflare (recommended), set `HOST=127.0.0.1` (as configured above) and rely on the proxy.
+  - The server reads `HOST` and uses `.listen({ port, host })`. Rebuild if you changed sources.
 - Manual foreground test (to surface runtime errors):
   ```bash
   sudo -H env \

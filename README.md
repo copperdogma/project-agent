@@ -2,9 +2,9 @@
 
 A local Model Context Protocol (MCP) server to edit Markdown in your Obsidian vault using deterministic ops with git-backed diffs. Preserves existing section order, uses YYYYMMDD date format, supports optimistic concurrency/idempotency, and includes a read-only mode.
 
-Status: Project Setup phase; minimal server scaffold running (Fastify). Endpoints: `/health`, `/version`. Optional TLS via self-signed certs.
+Status: Stable MCP HTTP/SSE server. Core endpoints: `/health`, `/version`, and SSE at `/sse` (alias `/mcp/sse`). Optional TLS and public HTTPS via Tailscale Serve/Funnel.
 
-Quick start:
+Quick start (local):
 
 ```bash
 npm install
@@ -15,6 +15,11 @@ curl -s http://127.0.0.1:7777/health
 curl -s http://127.0.0.1:7777/version
 ```
 
+Deployment and public connector setup:
+
+- See `project-agent-setup.md` for the canonical end-to-end guide (LaunchDaemon as user, Tailscale Serve + Funnel, verification, Claude SSE connector).
+- For end-to-end MCP tool validation in Claude, use `AI_TESTING_PROMPT.md`.
+
 Dev TLS (optional):
 
 ```bash
@@ -22,12 +27,16 @@ npm run generate:certs
 # then set TLS_CERT_PATH and TLS_KEY_PATH in .env
 ```
 
-Roadmap (per `/docs/requirements.md`): project.snapshot, project.getDocument, project.create, project.list, write tools (append/update_by_anchor/move_by_anchor/delete_by_anchor), project.undo; deterministic ops + git diff; standardized errors; audit + rate limiting; post-MVP: previewPlan/search.
+Roadmap completed per `/docs/requirements.md`: snapshot/get/create/list, write tools (append/update_by_anchor/move_by_anchor/delete_by_anchor), undo; deterministic ops + git diff; standardized errors; preview/search.
 
 ## MCP tools (available)
 
-- `project.snapshot`: Lightweight summary (frontmatter, toc, per-section tails, anchors index, recent ops, current_commit, date/tz).
-- `project.getDocument`: Full Markdown content with frontmatter, path, size, current_commit.
+Public tool names (underscores):
+
+- `server_health`, `server_version`
+- `project_list`, `project_snapshot`, `project_get_document`, `project_create`
+- `project_append`, `project_update_by_anchor`, `project_move_by_anchor`, `project_delete_by_anchor`
+- `project_undo`, `project_preview`, `project_search`
 
 ## Example Vault Fixtures
 
@@ -38,39 +47,32 @@ export VAULT_ROOT=$(pwd)/fixtures/example-vault
 ```
 
 Then run any scripts or start the server; tools will read from the fixtures vault.
-- `project.create`: Create new project doc with initial sections and frontmatter; registers in `projects.yaml`.
-- `project.list`: List known projects from registry.
-- `project.append` / `project.update_by_anchor` / `project.move_by_anchor` / `project.delete_by_anchor`: Deterministic edits; optional `expectedCommit` and `idempotencyKey`.
-- `project.undo`: Revert by commit, return revert commit and diff.
-- `server.health`: Uptime/status check.
-- `server.version`: App name/version and schema version.
-- `server_config`: Reveal server env (e.g., IDEMPOTENCY_TTL_S, READONLY).
-- `project_head_commit`: Return HEAD commit SHA for concurrency tests.
-- `server.health` (available): Uptime/status check.
-- `server.version` (available): App name/version and schema version.
-- `project.previewPlan` (post-MVP): Dry-run validation.
-- `project.search` (post-MVP): Find anchors/sections/lines by query.
 
 ## Environment
 
-- `PORT` (default `7777`)
+- `PORT` (default `7777`), `HOST` (default `127.0.0.1`)
 - `TIMEZONE` (default `America/Edmonton`)
 - `VAULT_ROOT` (absolute path to Obsidian vault)
 - `READONLY` (`true|false`; non-GET blocked when true)
-- `TLS_CERT_PATH`, `TLS_KEY_PATH` (optional for TLS)
-- `EMAIL_ALLOWLIST` (comma-separated emails; future enforcement)
-- `EMAIL_OVERRIDE` (dev convenience; future)
+- `DEV_BEARER_TOKEN` (optional bearer auth for dev/testing)
+- `EMAIL_ALLOWLIST` (comma-separated emails)
+- `TLS_CERT_PATH`, `TLS_KEY_PATH`, `TLS_CA_PATH` (optional; mTLS supported)
+- `RATE_LIMIT_MAX` (default 100), `RATE_LIMIT_WINDOW` (default `1 minute`)
+- Limits: `SNAPSHOT_MAX_BYTES` (default 262144), `APPLY_OPS_MAX_OPS` (default 128), `APPLY_OPS_MAX_LINE_BYTES` (default 16384), `SNAPSHOT_LONG_LINE_WARN_BYTES`
 
 ## Security
 
-- Localhost by default; LAN access requires TLS (mTLS support planned) and allowlist.
-- Email allowlist via `x-user-email` metadata (planned enforcement).
-- Read-only mode for demos/CI via `READONLY=true`.
+- Localhost by default; use Tailscale Serve/Funnel or a reverse proxy for external access.
+- Bearer token and email allowlist supported; read-only mode via `READONLY=true`.
 
-## HTTP endpoints (scaffold)
+## HTTP endpoints
 
 - `GET /health` → `{ status, uptime_s }`
 - `GET /version` → `{ app, version, schema }`
+- `GET /sse` (alias `/mcp/sse`) → establish SSE session
+- `POST /sse` (alias `/mcp/sse`) → JSON-RPC messages to the session
+- `GET /` → readiness `{ status: "ok" }`
+- `GET /.well-known/oauth-authorization-server` and `GET /.well-known/oauth-protected-resource` → minimal discovery stubs for connector probes
 
 ## Scripts
 
