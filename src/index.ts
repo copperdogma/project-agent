@@ -56,6 +56,23 @@ if (httpsOptions) {
   app = Fastify({ logger: { level: process.env.LOG_LEVEL || "info" } });
 }
 
+// Accept empty JSON bodies to support clients that POST with content-type json but no payload
+app.addContentTypeParser(
+  "application/json",
+  { parseAs: "string" },
+  (_req, body: string, done) => {
+    if (body == null || body === "") {
+      done(null, null);
+      return;
+    }
+    try {
+      done(null, JSON.parse(body));
+    } catch (err) {
+      done(err as Error);
+    }
+  },
+);
+
 // Read-only guard: block non-GET methods when READONLY=true
 const READONLY =
   String(process.env.READONLY || "false").toLowerCase() === "true";
