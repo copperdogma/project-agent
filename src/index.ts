@@ -187,7 +187,7 @@ app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
   if (req.url === "/health" || req.url === "/version") return;
   const pathOnly = req.url.split("?")[0] || "";
   const isSsePath = pathOnly.startsWith("/mcp/sse") || pathOnly.startsWith("/sse");
-  if ((req.method === "GET" || req.method === "HEAD") && (pathOnly === "/" || pathOnly === "/mcp")) {
+  if (pathOnly === "/" || pathOnly === "/mcp") {
     return;
   }
   // Allow well-known OAuth discovery/resource probes without auth
@@ -312,6 +312,10 @@ app.get("/health", async (_req: FastifyRequest, _reply: FastifyReply) => ({
 // Minimal readiness root
 app.get("/", async (_req: FastifyRequest, reply: FastifyReply) => {
   return reply.code(200).send({ status: "ok" });
+});
+
+app.post("/", async (_req: FastifyRequest, reply: FastifyReply) => {
+  return reply.code(200).send({ ok: true });
 });
 
 // Minimal OAuth discovery endpoints for connector probes
