@@ -183,10 +183,13 @@ const EMAIL_ALLOWLIST = (
 const EMAIL_OVERRIDE = process.env.EMAIL_OVERRIDE;
 
 app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
-  // Skip auth for health/version endpoints
+  // Skip auth for health/version and basic readiness endpoints
   if (req.url === "/health" || req.url === "/version") return;
   const pathOnly = req.url.split("?")[0] || "";
   const isSsePath = pathOnly.startsWith("/mcp/sse") || pathOnly.startsWith("/sse");
+  if ((req.method === "GET" || req.method === "HEAD") && (pathOnly === "/" || pathOnly === "/mcp")) {
+    return;
+  }
   // Allow HEAD/GET on SSE endpoints without auth so clients can establish the stream
   if ((req.method === "HEAD" || req.method === "GET") && isSsePath) return;
   // Allow POST to /mcp/sse/:sessionId when session exists (already authenticated at session creation)
