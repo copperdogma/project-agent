@@ -169,17 +169,17 @@ app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
   // Skip auth for health/version endpoints
   if (req.url === "/health" || req.url === "/version") return;
   const pathOnly = req.url.split("?")[0] || "";
-  const isMcpSse = pathOnly.startsWith("/mcp/sse");
-  // Allow HEAD probe on SSE endpoint without auth (ngrok/clients may probe)
-  if (req.method === "HEAD" && isMcpSse) return;
+  const isSsePath = pathOnly.startsWith("/mcp/sse") || pathOnly.startsWith("/sse");
+  // Allow HEAD/GET on SSE endpoints without auth so clients can establish the stream
+  if ((req.method === "HEAD" || req.method === "GET") && isSsePath) return;
   // Allow POST to /mcp/sse/:sessionId when session exists (already authenticated at session creation)
-  if (req.method === "POST" && pathOnly.startsWith("/mcp/sse/")) {
+  if (req.method === "POST" && (pathOnly.startsWith("/mcp/sse/") || pathOnly.startsWith("/sse/"))) {
     const parts = pathOnly.split("/");
     const sessionId = parts[parts.length - 1];
     if (sessionId && sseSessions.has(sessionId)) return;
   }
   // Also allow POST to /mcp/sse?sessionId=... (query param form)
-  if (req.method === "POST" && pathOnly === "/mcp/sse") {
+  if (req.method === "POST" && (pathOnly === "/mcp/sse" || pathOnly === "/sse")) {
     const sessionId = extractSessionId(req) || "";
     if (sessionId && sseSessions.has(sessionId)) return;
     // Fallback: if exactly one session exists, allow it (dev convenience)
@@ -200,7 +200,7 @@ app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
       }
     }
     // Fallback: allow token via query on MCP SSE endpoints for dev convenience
-    if (!isAuthenticated && isMcpSse) {
+    if (!isAuthenticated && isSsePath) {
       const q = (req as any).query || {};
       if (q.token && q.token === DEV_BEARER_TOKEN) {
         isAuthenticated = true;
@@ -245,31 +245,34 @@ app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
   const q = (req as any).query || {};
   const emailHeader =
     (req.headers["x-user-email"] as string | undefined) ||
-    (isMcpSse ? (q.email as string | undefined) : undefined) ||
+    (isSsePath ? (q.email as string | undefined) : undefined) ||
     EMAIL_OVERRIDE ||
     "";
-  if (!emailHeader) {
-    return reply
-      .code(403)
-      .send({
-        error: {
-          code: "FORBIDDEN_EMAIL",
-          message: "Missing x-user-email",
-          details: {},
-        },
-      });
-  }
-  const isAllowed = EMAIL_ALLOWLIST.includes(emailHeader);
-  if (!isAllowed) {
-    return reply
-      .code(403)
-      .send({
-        error: {
-          code: "FORBIDDEN_EMAIL",
-          message: "Email not allowed",
-          details: { email: emailHeader },
-        },
-      });
+  // For SSE endpoints, allow bearer-token-only auth (no email header required)
+  if (!isSsePath) {
+    if (!emailHeader) {
+      return reply
+        .code(403)
+        .send({
+          error: {
+            code: "FORBIDDEN_EMAIL",
+            message: "Missing x-user-email",
+            details: {},
+          },
+        });
+    }
+    const isAllowed = EMAIL_ALLOWLIST.includes(emailHeader);
+    if (!isAllowed) {
+      return reply
+        .code(403)
+        .send({
+          error: {
+            code: "FORBIDDEN_EMAIL",
+            message: "Email not allowed",
+            details: { email: emailHeader },
+          },
+        });
+    }
   }
 });
 
@@ -325,9 +328,64 @@ app.get("/mcp/sse", async (_req: FastifyRequest, reply: FastifyReply) => {
   // connect() already starts the SSE transport
 });
 
+// Alias endpoints for clients expecting "/sse" path
+app.get("/sse", async (_req: FastifyRequest, reply: FastifyReply) => {
+  const mcp = new McpServer({ name: "project-agent", version: "1.0.0" });
+  registerMcpTools(mcp);
+  const transport = new SSEServerTransport("/sse", reply.raw);
+  try {
+    reply.header("x-mcp-session-id", (transport as any).sessionId);
+  } catch {}
+  try {
+    (app as any).log?.info(
+      { sessionId: (transport as any).sessionId, beforeSize: sseSessions.size },
+      "sse session registering (/sse)",
+    );
+  } catch {}
+  await mcp.connect(transport);
+  sseSessions.set(transport.sessionId, { transport, server: mcp });
+  try {
+    (app as any).log?.info(
+      {
+        sessionId: transport.sessionId,
+        afterSize: sseSessions.size,
+        keys: Array.from(sseSessions.keys()),
+      },
+      "sse session registered (/sse)",
+    );
+  } catch {}
+  lastSessionId = transport.sessionId;
+});
+
 // Client POST messages are routed by sessionId
 app.post(
   "/mcp/sse/:sessionId",
+  async (
+    req: FastifyRequest<{ Params: { sessionId: string }; Body: unknown }>,
+    reply: FastifyReply,
+  ) => {
+    const entry = sseSessions.get(req.params.sessionId);
+    if (!entry) {
+      return reply
+        .code(404)
+        .send({
+          error: {
+            code: "NOT_FOUND",
+            message: "Unknown SSE session",
+            details: { sessionId: req.params.sessionId },
+          },
+        });
+    }
+    await entry.transport.handlePostMessage(
+      req.raw as any,
+      reply.raw,
+      (req as any).body,
+    );
+  },
+);
+
+app.post(
+  "/sse/:sessionId",
   async (
     req: FastifyRequest<{ Params: { sessionId: string }; Body: unknown }>,
     reply: FastifyReply,
@@ -445,13 +503,102 @@ app.post(
   },
 );
 
+app.post(
+  "/sse",
+  async (
+    req: FastifyRequest<{ Querystring: { sessionId?: string }; Body: unknown }>,
+    reply: FastifyReply,
+  ) => {
+    const rawUrl = (req.raw as any)?.url as string | undefined;
+    let sessionId: string = (extractSessionId(req) ?? "") as string;
+    try {
+      (app as any).log?.info(
+        {
+          rawUrl,
+          parsedSessionId: sessionId,
+          lastSessionId,
+          size: sseSessions.size,
+          keys: Array.from(sseSessions.keys()),
+        },
+        "POST /sse received",
+      );
+    } catch {}
+
+    if (!sessionId) {
+      const startedAt = Date.now();
+      while (!sessionId && Date.now() - startedAt < 5000) {
+        if (sseSessions.size === 1) {
+          sessionId = Array.from(sseSessions.keys())[0] as string;
+          break;
+        }
+        if (lastSessionId) {
+          sessionId = lastSessionId as string;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    }
+
+    if (!sessionId && sseSessions.size === 1) {
+      sessionId = Array.from(sseSessions.keys())[0] as string;
+    }
+    if (!sessionId && lastSessionId) {
+      sessionId = lastSessionId as string;
+    }
+    if (!sessionId) {
+      try {
+        (app as any).log?.warn(
+          { size: sseSessions.size, lastSessionId },
+          "POST /sse no session available",
+        );
+      } catch {}
+      return reply
+        .code(503)
+        .send({
+          error: {
+            code: "SSE_NOT_READY",
+            message: "SSE connection not established",
+            details: {},
+          },
+        });
+    }
+    const entry = sseSessions.get(sessionId);
+    if (!entry) {
+      try {
+        (app as any).log?.warn(
+          { sessionId, keys: Array.from(sseSessions.keys()) },
+          "POST /sse unknown session",
+        );
+      } catch {}
+      return reply
+        .code(404)
+        .send({
+          error: {
+            code: "NOT_FOUND",
+            message: "Unknown SSE session",
+            details: { sessionId },
+          },
+        });
+    }
+    await entry.transport.handlePostMessage(
+      req.raw as any,
+      reply.raw,
+      (req as any).body,
+    );
+    try {
+      (app as any).log?.info({ sessionId }, "POST /sse forwarded to transport");
+    } catch {}
+  },
+);
+
 // (HEAD auto-supported by Fastify for GET routes)
 
 // (removed duplicate definitions)
 
 const port = Number(process.env.PORT || 7777);
+const host = String(process.env.HOST || "127.0.0.1");
 app
-  .listen({ port, host: "127.0.0.1" })
+  .listen({ port, host })
   .then(() => {
     app.log.info({ port }, "server started");
   })
