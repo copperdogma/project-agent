@@ -74,6 +74,17 @@ Then run any scripts or start the server; tools will read from the fixtures vaul
 - `GET /` → readiness `{ status: "ok" }`
 - `GET /.well-known/oauth-authorization-server` and `GET /.well-known/oauth-protected-resource` → minimal discovery stubs for connector probes
 
+## Restart service after updates (LaunchDaemon)
+
+```bash
+git pull --rebase --autostash && npm run build
+sudo launchctl kickstart -k system/com.projectagent.mcp
+# Optional diagnostics
+sudo launchctl print system/com.projectagent.mcp | sed -n '1,80p'
+sudo tail -n 50 /var/log/project-agent.out.log
+sudo tail -n 50 /var/log/project-agent.err.log
+```
+
 ## Scripts
 
 - `npm run dev` – run with ts-node-dev

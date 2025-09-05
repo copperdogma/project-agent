@@ -326,6 +326,24 @@ Hardening tip:
    - `sudo tail -f /var/log/project-agent.out.log`
    - You should see: GET `/sse` ("sse session registered"), followed by POST `/sse` ("forwarded to transport").
 
+## Restart service after updates
+
+When you pull new code or rebuild, restart the LaunchDaemon:
+
+```bash
+cd /Users/occam/MCPs/project-agent
+git pull --rebase --autostash && npm run build
+sudo launchctl kickstart -k system/com.projectagent.mcp
+```
+
+Optional diagnostics:
+
+```bash
+sudo launchctl print system/com.projectagent.mcp | sed -n '1,120p'
+sudo tail -n 100 /var/log/project-agent.out.log
+sudo tail -n 100 /var/log/project-agent.err.log
+```
+
 ## Troubleshooting
 - EX_CONFIG (78) after `load`:
   - Likely causes: invalid plist, `node` not found, or specifying `UserName` for a system LaunchDaemon. Solution: remove `UserName` to run as root, ensure absolute `node` path in ProgramArguments, and include `PATH` in `EnvironmentVariables`.
