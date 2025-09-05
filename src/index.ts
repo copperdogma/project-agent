@@ -190,6 +190,14 @@ app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
   if ((req.method === "GET" || req.method === "HEAD") && (pathOnly === "/" || pathOnly === "/mcp")) {
     return;
   }
+  // Allow well-known OAuth discovery/resource probes without auth
+  if (pathOnly.startsWith("/.well-known/")) {
+    return;
+  }
+  // Allow connector registration probe without auth
+  if (pathOnly === "/register") {
+    return;
+  }
   // Allow HEAD/GET on SSE endpoints without auth so clients can establish the stream
   if ((req.method === "HEAD" || req.method === "GET") && isSsePath) return;
   // Allow POST to /mcp/sse/:sessionId when session exists (already authenticated at session creation)
@@ -300,6 +308,30 @@ app.get("/health", async (_req: FastifyRequest, _reply: FastifyReply) => ({
   status: "ok",
   uptime_s: Math.round(process.uptime()),
 }));
+
+// Minimal readiness root
+app.get("/", async (_req: FastifyRequest, reply: FastifyReply) => {
+  return reply.code(200).send({ status: "ok" });
+});
+
+// Minimal OAuth discovery endpoints for connector probes
+app.get(
+  "/.well-known/oauth-authorization-server",
+  async (_req: FastifyRequest, reply: FastifyReply) => {
+    return reply.code(200).send({ issuer: "project-agent", authorization_endpoint: "/oauth/authorize" });
+  },
+);
+app.get(
+  "/.well-known/oauth-protected-resource",
+  async (_req: FastifyRequest, reply: FastifyReply) => {
+    return reply.code(200).send({ resource: "project-agent" });
+  },
+);
+
+// Minimal register endpoint (no-op)
+app.post("/register", async (_req: FastifyRequest, reply: FastifyReply) => {
+  return reply.code(200).send({ ok: true });
+});
 
 // Expose version info
 app.get("/version", async (_req: FastifyRequest, _reply: FastifyReply) => {
