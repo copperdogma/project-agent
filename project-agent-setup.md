@@ -1,4 +1,4 @@
-# Project Agent (MCP) on macOS via Tailnet — LaunchDaemon Setup
+# Project Agent (MCP) on macOS via Tailnet — LaunchDaemon or LaunchAgent Setup
 
 This guide provisions the Project Agent Node/Fastify server as a system LaunchDaemon on macOS. By default it binds to `0.0.0.0:7777` for direct LAN/tailnet HTTP access; you can optionally enable Tailnet HTTPS via Tailscale Serve. It also includes an optional LaunchDaemon that auto pull/pushes your Obsidian vault git repo every 3 minutes.
 
@@ -15,6 +15,65 @@ Works non-interactively, idempotently, and persists across reboots.
 - Authentication for other routes uses `DEV_BEARER_TOKEN` and `x-user-email` in `EMAIL_ALLOWLIST`
 
 Note on macOS privacy (TCC): if your vault is under `~/Documents`, a root LaunchDaemon may get EPERM. Run the daemon as the target user (e.g., `occam`) to ensure access.
+
+Quick recommendation: If your vault lives under `~/Documents` or you want the service to run entirely in user space, use a user LaunchAgent (under `~/Library/LaunchAgents`) and write logs to `~/Library/Logs`. This avoids TCC denials and `/var/log` permission issues that can cause `EX_CONFIG` failures.
+
+## LaunchAgent variant (user session, recommended for user vaults)
+
+Use this if you prefer to run as your user and proxy externally via Tailscale Serve/Funnel or another reverse proxy. The service binds to loopback by default.
+
+```bash
+set -euo pipefail
+
+APP_DIR="/Users/occam/MCPs/project-agent"
+VAULT_DIR="/Users/occam/Documents/obsidian"
+NODE_PATH="$(/usr/bin/which node || true)"; [ -x "$NODE_PATH" ] || NODE_PATH="/usr/local/bin/node"
+
+mkdir -p "$APP_DIR" ~/Library/LaunchAgents ~/Library/Logs
+
+# Ensure app is built
+(cd "$APP_DIR" && npm ci && npm run build)
+
+cat > ~/Library/LaunchAgents/com.projectagent.mcp.plist <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.projectagent.mcp</string>
+  <key>WorkingDirectory</key><string>/Users/occam/MCPs/project-agent</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/node</string>
+    <string>/Users/occam/MCPs/project-agent/dist/index.js</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    <key>VAULT_ROOT</key><string>/Users/occam/Documents/obsidian</string>
+    <key>PORT</key><string>7777</string>
+    <key>HOST</key><string>127.0.0.1</string>
+    <key>READONLY</key><string>false</string>
+    <key>DEV_BEARER_TOKEN</key><string>set-a-strong-token</string>
+    <key>TIMEZONE</key><string>America/Edmonton</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>StandardOutPath</key><string>/Users/occam/Library/Logs/project-agent.out.log</string>
+  <key>StandardErrorPath</key><string>/Users/occam/Library/Logs/project-agent.err.log</string>
+</dict></plist>
+PLIST
+
+plutil -lint ~/Library/LaunchAgents/com.projectagent.mcp.plist
+
+# Load + start in the GUI (user) domain
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.projectagent.mcp.plist 2>/dev/null || true
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.projectagent.mcp.plist
+launchctl kickstart -k gui/$(id -u)/com.projectagent.mcp
+
+# Verify and tail logs
+launchctl print gui/$(id -u)/com.projectagent.mcp | sed -n '1,120p'
+tail -n 100 ~/Library/Logs/project-agent.out.log
+tail -n 100 ~/Library/Logs/project-agent.err.log
+```
 
 ## Networking: Tailscale (Tailnet + Public HTTPS)
 - Install the Tailscale CLI and log in so the machine has a tailnet IP (100.64.0.0/10):
@@ -336,6 +395,14 @@ git pull --rebase --autostash && npm run build
 sudo launchctl kickstart -k system/com.projectagent.mcp
 ```
 
+If you installed as a LaunchAgent instead, restart it in the user domain:
+
+```bash
+cd /Users/occam/MCPs/project-agent
+git pull --rebase --autostash && npm run build
+launchctl kickstart -k gui/$(id -u)/com.projectagent.mcp
+```
+
 Optional diagnostics:
 
 ```bash
@@ -351,6 +418,7 @@ sudo tail -n 100 /var/log/project-agent.err.log
   - Check logs: `sudo tail -n 200 /var/log/project-agent.err.log` and `...out.log`.
   - Launchd status: `sudo launchctl print system/com.projectagent.mcp | sed -n '1,200p'`.
   - Launchd events: `log show --last 15m --predicate 'process == "launchd" && eventMessage CONTAINS "com.projectagent.mcp"'`.
+  - LaunchAgent-specific: if `StandardOutPath`/`StandardErrorPath` point to `/var/log`, the user agent cannot write there and will exit with `EX_CONFIG`. Set them to `~/Library/Logs/...` and reload via `launchctl bootstrap gui/$(id -u) ...`.
 - Service not listening on 0.0.0.0:
   - For LAN/tailnet HTTP access, set `HOST=0.0.0.0` in the plist and reload.
   - For Serve/Funnel/Cloudflare (recommended), set `HOST=127.0.0.1` (as configured above) and rely on the proxy.
@@ -368,5 +436,6 @@ sudo tail -n 100 /var/log/project-agent.err.log
 
 ## Notes
 - LaunchDaemons run as root; that’s expected here and avoids certain EX_CONFIG issues. Logs are placed under `/var/log/` with `root:wheel` ownership and mode `664`.
+- LaunchAgents run in the user session and should log under `~/Library/Logs/`.
 - The optional git push daemon is also a system LaunchDaemon and will run every 180 seconds if the vault is a git repo.
-- Persistence across reboots is handled by `launchctl load -w`.
+- Persistence across reboots is handled by `launchctl load -w` (for system daemons) or `launchctl bootstrap gui/$(id -u)` (for user agents).

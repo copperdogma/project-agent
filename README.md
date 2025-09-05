@@ -17,7 +17,7 @@ curl -s http://127.0.0.1:7777/version
 
 Deployment and public connector setup:
 
-- See `project-agent-setup.md` for the canonical end-to-end guide (LaunchDaemon as user, Tailscale Serve + Funnel, verification, Claude SSE connector).
+- See `project-agent-setup.md` for the canonical end-to-end guide (LaunchDaemon or LaunchAgent, Tailscale Serve/Funnel, verification, Claude SSE connector).
 - For end-to-end MCP tool validation in Claude, use `AI_TESTING_PROMPT.md`.
 
 Dev TLS (optional):
@@ -83,6 +83,17 @@ sudo launchctl kickstart -k system/com.projectagent.mcp
 sudo launchctl print system/com.projectagent.mcp | sed -n '1,80p'
 sudo tail -n 50 /var/log/project-agent.out.log
 sudo tail -n 50 /var/log/project-agent.err.log
+```
+
+## Restart service after updates (LaunchAgent)
+
+```bash
+git pull --rebase --autostash && npm run build
+launchctl kickstart -k gui/$(id -u)/com.projectagent.mcp
+# Optional diagnostics
+launchctl print gui/$(id -u)/com.projectagent.mcp | sed -n '1,80p'
+tail -n 50 ~/Library/Logs/project-agent.out.log
+tail -n 50 ~/Library/Logs/project-agent.err.log
 ```
 
 ## Scripts
