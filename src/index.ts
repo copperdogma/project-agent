@@ -393,11 +393,14 @@ app.post(
           },
         });
     }
-    await entry.transport.handlePostMessage(
-      req.raw as any,
-      reply.raw,
-      (req as any).body,
-    );
+    const rawBody: unknown = (req as any).body;
+    const payload: string =
+      typeof rawBody === "string"
+        ? rawBody
+        : rawBody
+          ? JSON.stringify(rawBody)
+          : "";
+    await entry.transport.handlePostMessage(req.raw as any, reply.raw, payload);
   },
 );
 
@@ -506,11 +509,14 @@ app.post(
           },
         });
     }
-    await entry.transport.handlePostMessage(
-      req.raw as any,
-      reply.raw,
-      (req as any).body,
-    );
+    const rawBody: unknown = (req as any).body;
+    const payload: string =
+      typeof rawBody === "string"
+        ? rawBody
+        : rawBody
+          ? JSON.stringify(rawBody)
+          : "";
+    await entry.transport.handlePostMessage(req.raw as any, reply.raw, payload);
     try {
       (app as any).log?.info(
         { sessionId },
@@ -597,11 +603,14 @@ app.post(
           },
         });
     }
-    await entry.transport.handlePostMessage(
-      req.raw as any,
-      reply.raw,
-      (req as any).body,
-    );
+    const rawBody: unknown = (req as any).body;
+    const payload: string =
+      typeof rawBody === "string"
+        ? rawBody
+        : rawBody
+          ? JSON.stringify(rawBody)
+          : "";
+    await entry.transport.handlePostMessage(req.raw as any, reply.raw, payload);
     try {
       (app as any).log?.info({ sessionId }, "POST /sse forwarded to transport");
     } catch {}
