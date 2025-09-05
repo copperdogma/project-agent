@@ -399,7 +399,7 @@ app.post(
         ? rawBody
         : rawBody
           ? JSON.stringify(rawBody)
-          : "";
+          : "{}";
     await entry.transport.handlePostMessage(req.raw as any, reply.raw, payload);
   },
 );
@@ -515,7 +515,7 @@ app.post(
         ? rawBody
         : rawBody
           ? JSON.stringify(rawBody)
-          : "";
+          : "{}";
     await entry.transport.handlePostMessage(req.raw as any, reply.raw, payload);
     try {
       (app as any).log?.info(
@@ -609,7 +609,7 @@ app.post(
         ? rawBody
         : rawBody
           ? JSON.stringify(rawBody)
-          : "";
+          : "{}";
     await entry.transport.handlePostMessage(req.raw as any, reply.raw, payload);
     try {
       (app as any).log?.info({ sessionId }, "POST /sse forwarded to transport");
