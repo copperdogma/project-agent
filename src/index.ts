@@ -400,6 +400,18 @@ app.post(
         : rawBody
           ? JSON.stringify(rawBody)
           : "{}";
+    try {
+      (app as any).log?.info(
+        {
+          sessionId: req.params.sessionId,
+          ct: req.headers["content-type"],
+          cl: req.headers["content-length"],
+          bodyLen: typeof payload === "string" ? payload.length : 0,
+          bodyHead: typeof payload === "string" ? payload.slice(0, 80) : "",
+        },
+        "POST /mcp/sse/:sessionId payload",
+      );
+    } catch {}
     await entry.transport.handlePostMessage(req.raw as any, reply.raw, payload);
   },
 );
@@ -516,6 +528,18 @@ app.post(
         : rawBody
           ? JSON.stringify(rawBody)
           : "{}";
+    try {
+      (app as any).log?.info(
+        {
+          sessionId,
+          ct: req.headers["content-type"],
+          cl: req.headers["content-length"],
+          bodyLen: typeof payload === "string" ? payload.length : 0,
+          bodyHead: typeof payload === "string" ? payload.slice(0, 80) : "",
+        },
+        "POST /mcp/sse payload",
+      );
+    } catch {}
     await entry.transport.handlePostMessage(req.raw as any, reply.raw, payload);
     try {
       (app as any).log?.info(
@@ -610,6 +634,18 @@ app.post(
         : rawBody
           ? JSON.stringify(rawBody)
           : "{}";
+    try {
+      (app as any).log?.info(
+        {
+          sessionId,
+          ct: req.headers["content-type"],
+          cl: req.headers["content-length"],
+          bodyLen: typeof payload === "string" ? payload.length : 0,
+          bodyHead: typeof payload === "string" ? payload.slice(0, 80) : "",
+        },
+        "POST /sse payload",
+      );
+    } catch {}
     await entry.transport.handlePostMessage(req.raw as any, reply.raw, payload);
     try {
       (app as any).log?.info({ sessionId }, "POST /sse forwarded to transport");
