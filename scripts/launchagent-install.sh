@@ -3,18 +3,24 @@ set -euo pipefail
 
 # Install or update a per-user LaunchAgent for Project Agent (MCP).
 # - Runs in the logged-in user session (Keychain available)
+# - Reads config from .env by default (VAULT_ROOT, HOST, PORT, PROJECT_ROOTS, etc.)
 # - Binds to 127.0.0.1:PORT
 # - Label: com.projectagent.mcp.user
 # - Logs: ~/Library/Logs/com.projectagent.mcp.user.(out|err).log
 #
-# Usage:
-#   bash scripts/launchagent-install.sh \
-#     --app-dir /Users/occam/MCPs/project-agent \
-#     --vault-dir /Users/occam/Documents/obsidian \
-#     --port 7777 \
-#     [--host 127.0.0.1] [--project-roots "Projects,Notes,Project Research"]
+# Typical usage (from repo root):
+#   bash scripts/launchagent-install.sh
+#
+# Optional overrides:
+#   --app-dir <path>           Override app directory (default: repo root)
+#   --vault-dir <path>         Override VAULT_ROOT (.env wins if set)
+#   --port <num>               Override PORT (.env wins if set)
+#   --host <ip>                Override HOST (.env wins if set)
+#   --project-roots <csv>      Override PROJECT_ROOTS (.env wins if set)
 
-APP_DIR="/Users/occam/MCPs/project-agent"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+APP_DIR="${REPO_ROOT}"
 VAULT_DIR="/Users/occam/Documents/obsidian"
 PORT="7777"
 HOST="127.0.0.1"
@@ -47,7 +53,35 @@ if [[ ! -x "$NODE_PATH" ]]; then
   exit 1
 fi
 
-mkdir -p "$HOME/Library/LaunchAgents" "$LOG_DIR"
+# Load .env (if present) to populate defaults
+if [[ -f "$APP_DIR/.env" ]]; then
+  # shellcheck disable=SC2046
+  set -a
+  if ! . "$APP_DIR/.env" 2>/dev/null; then
+    echo "Error: failed to read .env. If any values contain spaces (e.g., PROJECT_ROOTS), quote them like:" >&2
+    echo "  PROJECT_ROOTS=\"Projects,Notes,Project Research\"" >&2
+    exit 1
+  fi
+  set +a
+fi
+
+# Apply env overrides if set
+VAULT_DIR="${VAULT_ROOT:-$VAULT_DIR}"
+PORT="${PORT:-$PORT}"
+HOST="${HOST:-$HOST}"
+PROJECT_ROOTS="${PROJECT_ROOTS:-$PROJECT_ROOTS}"
+
+mkdir -p "$HOME/Library/LaunchAgents" "$LOG_DIR" || {
+  echo "Error: cannot create ~/Library/LaunchAgents. If this directory is root-owned, fix with:" >&2
+  echo "  sudo chown -R \"$USER:staff\" \"$HOME/Library/LaunchAgents\"" >&2
+  exit 1
+}
+
+if [[ -f "$PLIST_USER" && ! -w "$PLIST_USER" ]]; then
+  echo "Error: cannot write $PLIST_USER (permission denied). If created as root earlier, fix with:" >&2
+  echo "  sudo chown $USER:staff \"$PLIST_USER\"" >&2
+  exit 1
+fi
 
 cat > "$PLIST_USER" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
