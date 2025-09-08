@@ -26,6 +26,7 @@ PORT="7777"
 HOST="127.0.0.1"
 PROJECT_ROOTS="Projects"
 LABEL_USER="com.projectagent.mcp.user"
+LABEL_SYS="com.projectagent.mcp"
 PLIST_USER="$HOME/Library/LaunchAgents/${LABEL_USER}.plist"
 LOG_DIR="$HOME/Library/Logs"
 OUT_LOG="$LOG_DIR/${LABEL_USER}.out.log"
@@ -76,6 +77,30 @@ mkdir -p "$HOME/Library/LaunchAgents" "$LOG_DIR" || {
   echo "  sudo chown -R \"$USER:staff\" \"$HOME/Library/LaunchAgents\"" >&2
   exit 1
 }
+
+# Stop system LaunchDaemon to avoid port conflicts (best effort)
+echo "Stopping system LaunchDaemon (if loaded)…"
+if launchctl print system/${LABEL_SYS} >/dev/null 2>&1; then
+  if ! sudo launchctl bootout system/${LABEL_SYS} 2>/dev/null; then
+    echo "Note: could not stop system/${LABEL_SYS}. If it remains active, run:" >&2
+    echo "  sudo launchctl bootout system/${LABEL_SYS}" >&2
+  fi
+fi
+
+# Kill any rogue listener on the selected port (best effort)
+if command -v lsof >/dev/null 2>&1; then
+  PIDS=$(lsof -tiTCP:${PORT} -sTCP:LISTEN 2>/dev/null || true)
+  if [[ -n "${PIDS}" ]]; then
+    echo "Stopping rogue listeners on :${PORT}: ${PIDS}"
+    kill -TERM ${PIDS} 2>/dev/null || true
+    sleep 1
+    PIDS2=$(lsof -tiTCP:${PORT} -sTCP:LISTEN 2>/dev/null || true)
+    if [[ -n "${PIDS2}" ]]; then
+      echo "Force killing: ${PIDS2}"
+      kill -KILL ${PIDS2} 2>/dev/null || true
+    fi
+  fi
+fi
 
 if [[ -f "$PLIST_USER" && ! -w "$PLIST_USER" ]]; then
   echo "Error: cannot write $PLIST_USER (permission denied). If created as root earlier, fix with:" >&2
