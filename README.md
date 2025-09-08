@@ -38,6 +38,7 @@ Public tool names (underscores):
 - `project_append`, `project_update_by_anchor`, `project_move_by_anchor`, `project_delete_by_anchor`
 - `project_undo`, `project_preview`, `project_search`
 - `project_create_section` (new) — creates a section heading if missing (inserted as the first section)
+- `project_move_document` (new) — move a document between top‑level folders (e.g., from "Project Research" to "Projects"). Optionally rename title and slug.
 
 ## Example Vault Fixtures
 
@@ -60,6 +61,7 @@ Then run any scripts or start the server; tools will read from the fixtures vaul
 - `TLS_CERT_PATH`, `TLS_KEY_PATH`, `TLS_CA_PATH` (optional; mTLS supported)
 - `RATE_LIMIT_MAX` (default 100), `RATE_LIMIT_WINDOW` (default `1 minute`)
 - Git auto-push: `GIT_AUTO_PUSH` (default `true`), `GIT_REMOTE_NAME` (default `origin`) — after write commits the server attempts a best‑effort `git push` of `HEAD` to the current branch. Configure your vault repo with a valid remote and credentials; failures are logged but do not break tool responses.
+- Multi-folder roots: `PROJECT_ROOTS` (comma-separated; default `Projects`). The server scans and resolves documents across these top‑level folders (e.g., `Projects,Notes,Project Research`). `project_list` includes `folder` and `path` for each item.
 - Limits: `SNAPSHOT_MAX_BYTES` (default 262144), `APPLY_OPS_MAX_OPS` (default 128), `APPLY_OPS_MAX_LINE_BYTES` (default 16384), `SNAPSHOT_LONG_LINE_WARN_BYTES`
 
 ## Security

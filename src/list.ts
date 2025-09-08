@@ -2,8 +2,9 @@ import fs from "fs";
 import path from "path";
 import { getVaultRoot } from "./vault.js";
 import { deriveSlugFromTitle } from "./slug.js";
+import { getProjectRoots } from "./roots.js";
 
-interface ProjectEntry { title: string; slug: string; path: string }
+interface ProjectEntry { title: string; slug: string; path: string; folder: string }
 
 function parseFrontmatter(raw: string): Record<string, string> {
   const lines = raw.split(/\n|\r\n|\r/);
@@ -62,25 +63,27 @@ export function listProjects(): ProjectEntry[] {
         }
       }
       if (current && current.title && current.slug && current.path) items.push(current as ProjectEntry);
-      for (const it of items) fromRegistry.push({ title: it.title, slug: it.slug, path: it.path });
+      for (const it of items) fromRegistry.push({ title: it.title, slug: it.slug, path: it.path, folder: it.path.split("/")[0] || "Projects" });
     } catch {
       // ignore parse errors; we'll still scan filesystem
     }
   }
 
   const fromScan: ProjectEntry[] = [];
-  const projectsDir = path.join(vaultRoot, "Projects");
-  if (fs.existsSync(projectsDir) && fs.statSync(projectsDir).isDirectory()) {
-    for (const entry of fs.readdirSync(projectsDir)) {
-      if (!entry.toLowerCase().endsWith(".md")) continue;
-      const abs = path.join(projectsDir, entry);
-      try {
-        const raw = fs.readFileSync(abs, "utf8");
-        const fm = parseFrontmatter(raw);
-        const title = fm.title || path.basename(entry, ".md");
-        const slug = fm.slug || deriveSlugFromTitle(title);
-        fromScan.push({ title, slug, path: path.relative(vaultRoot, abs) });
-      } catch {}
+  for (const folder of getProjectRoots()) {
+    const dir = path.join(vaultRoot, folder);
+    if (fs.existsSync(dir) && fs.statSync(dir).isDirectory()) {
+      for (const entry of fs.readdirSync(dir)) {
+        if (!entry.toLowerCase().endsWith(".md")) continue;
+        const abs = path.join(dir, entry);
+        try {
+          const raw = fs.readFileSync(abs, "utf8");
+          const fm = parseFrontmatter(raw);
+          const title = fm.title || path.basename(entry, ".md");
+          const slug = fm.slug || deriveSlugFromTitle(title);
+          fromScan.push({ title, slug, path: path.relative(vaultRoot, abs), folder });
+        } catch {}
+      }
     }
   }
 

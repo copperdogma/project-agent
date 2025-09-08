@@ -11,6 +11,7 @@ import { errorFromException, makeError } from "../errors.js";
 import { writeAudit } from "../audit.js";
 import { allow as rateAllow } from "../rate.js";
 import { ensureSectionTop } from "../sections.js";
+import { moveDocument } from "../move.js";
 
 export function registerProjectTools(mcpServer: McpServer): void {
   mcpServer.registerTool(
@@ -118,7 +119,7 @@ export function registerProjectTools(mcpServer: McpServer): void {
 
   mcpServer.registerTool(
     "project_list",
-    { description: "List available projects (title, slug, path). Sorted by title; slugs are unique.", inputSchema: {} },
+    { description: "List available projects (title, slug, path, folder). Sorted by title; slugs are unique.", inputSchema: {} },
     async () => {
       try {
         const payload = listProjects();
@@ -262,6 +263,7 @@ export function registerProjectTools(mcpServer: McpServer): void {
         "Create a new project document under Projects/<Title>.md and add it to registry.\n" +
         "Slug: optional; auto-generated from title if omitted (lowercase, dashes).\n" +
         "router_email: optional metadata for routing/ownership; stored in frontmatter if provided.\n" +
+        "folder: optional top-level folder to place the document (defaults to 'Projects').\n" +
         "Validation: title is required; filename is sanitized (replaces unsafe chars). Unique slug enforced via registry.\n" +
         "Template: creates frontmatter (title, slug, router_email?) and starter sections: Uncategorized, Notes, Resources.\n" +
         "Returns: {title, slug, path}.",
@@ -269,6 +271,7 @@ export function registerProjectTools(mcpServer: McpServer): void {
         title: z.string(),
         slug: z.string().optional(),
         router_email: z.string().optional(),
+        folder: z.string().optional(),
       },
     },
     async (args: any) => {
@@ -287,6 +290,7 @@ export function registerProjectTools(mcpServer: McpServer): void {
         const input: any = { title: String(args?.title || "") };
         if (args?.slug !== undefined) input.slug = String(args.slug);
         if (args?.router_email !== undefined) input.router_email = String(args.router_email);
+        if (args?.folder !== undefined) input.folder = String(args.folder);
         const payload = await createProject(input);
         writeAudit({ ts: new Date().toISOString(), email, tool: "project_create", slug: payload?.slug || input?.slug, summary: ["create"], commit: null });
         return { content: [{ type: "text", text: JSON.stringify(payload) }] };
@@ -352,6 +356,33 @@ export function registerProjectTools(mcpServer: McpServer): void {
         const payload = await undoCommit({ commit: String(args?.commit || "") });
         writeAudit({ ts: new Date().toISOString(), email, tool: "project_undo", summary: ["undo"], commit: payload?.revert_commit ?? null });
         return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
+    },
+  );
+
+  mcpServer.registerTool(
+    "project_move_document",
+    {
+      description: "Move a document to another top-level folder. Preserves git history with git mv. Optionally rename title and slug.",
+      inputSchema: { slug: z.string(), toFolder: z.string(), newTitle: z.string().optional(), keepSlug: z.boolean().optional() },
+    },
+    async (args: any) => {
+      try {
+        const readonly = String(process.env.READONLY || "false").toLowerCase() === "true";
+        if (readonly) return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
+        const email = String(process.env.EMAIL_OVERRIDE || "anonymous");
+        const key = `${email}:${String(args?.slug || "")}`;
+        const cap = Number(process.env.RATE_LIMIT_WRITE_MAX || 20);
+        const windowSec = Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60);
+        if (!rateAllow(key, cap, windowSec)) return { content: [{ type: "text", text: JSON.stringify(makeError("RATE_LIMITED", "Write rate limit exceeded", { key })) }] };
+        const mi: any = { slug: String(args?.slug || ""), toFolder: String(args?.toFolder || "") };
+        if (args?.newTitle !== undefined) mi.newTitle = String(args.newTitle);
+        if (args?.keepSlug !== undefined) mi.keepSlug = Boolean(args.keepSlug);
+        const res = await moveDocument(mi);
+        writeAudit({ ts: new Date().toISOString(), email, tool: "project_move_document", slug: String(args?.slug || ""), summary: ["move"], commit: res.commit });
+        return { content: [{ type: "text", text: JSON.stringify(res) }] };
       } catch (err) {
         return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
       }

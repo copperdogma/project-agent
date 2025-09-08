@@ -79,6 +79,7 @@ export interface CreateProjectInput {
   title: string;
   slug?: string;
   router_email?: string;
+  folder?: string;
 }
 
 export interface CreateProjectResult {
@@ -101,10 +102,11 @@ export async function createProject(input: CreateProjectInput): Promise<CreatePr
   const title = String(input.title || "").trim();
   if (!title) throw new Error("VALIDATION_ERROR: title required");
   const slug = String(input.slug || deriveSlugFromTitle(title));
-  const projectsDir = path.join(vaultRoot, "Projects");
+  const folder = String(input.folder || "Projects");
+  const projectsDir = path.join(vaultRoot, folder);
   const safeTitle = sanitizeTitleForFilename(title);
   const fileName = `${safeTitle}.md`;
-  const relPath = path.join("Projects", fileName);
+  const relPath = path.join(folder, fileName);
   const absPath = path.join(projectsDir, fileName);
 
   // Enforce unique slug
@@ -191,4 +193,3 @@ export async function createProject(input: CreateProjectInput): Promise<CreatePr
 
   return { title, slug, path: relPath };
 }
-

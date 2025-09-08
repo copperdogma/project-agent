@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { deriveSlugFromTitle } from "./slug.js";
+import { getProjectRoots } from "./roots.js";
 
 export function parseFrontmatterBasic(raw: string): { frontmatter: Record<string, string> } {
   const sanitized = raw.replace(/^\uFEFF/, "");
@@ -37,30 +38,32 @@ export function findFileBySlug(slug: string, vaultRoot: string): string | null {
     variants.add(normalizeSlugValue(decodeURIComponent(provided)));
   } catch {}
 
-  const projectsDir = path.join(vaultRoot, "Projects");
-  if (fs.existsSync(projectsDir) && fs.statSync(projectsDir).isDirectory()) {
-    const entries = fs.readdirSync(projectsDir);
-    for (const entry of entries) {
-      if (!entry.toLowerCase().endsWith(".md")) continue;
-      const abs = path.join(projectsDir, entry);
-      try {
-        const raw = fs.readFileSync(abs, "utf8");
-        const { frontmatter } = parseFrontmatterBasic(raw);
-        const fmSlug = (frontmatter.slug || (frontmatter as any).Slug || "").trim();
-        const fmTitle = (frontmatter.title || (frontmatter as any).Title || "").trim();
-        const base = path.basename(entry, ".md");
-        const candidates = new Set<string>([
-          normalizeSlugValue(fmSlug),
-          normalizeSlugValue(deriveSlugFromTitle(fmTitle || base)),
-          normalizeSlugValue(deriveSlugFromTitle(base)),
-        ]);
-        for (const v of variants) {
-          if (candidates.has(v)) return abs;
-        }
-      } catch {}
+  for (const root of getProjectRoots()) {
+    const dir = path.join(vaultRoot, root);
+    if (fs.existsSync(dir) && fs.statSync(dir).isDirectory()) {
+      const entries = fs.readdirSync(dir);
+      for (const entry of entries) {
+        if (!entry.toLowerCase().endsWith(".md")) continue;
+        const abs = path.join(dir, entry);
+        try {
+          const raw = fs.readFileSync(abs, "utf8");
+          const { frontmatter } = parseFrontmatterBasic(raw);
+          const fmSlug = (frontmatter.slug || (frontmatter as any).Slug || "").trim();
+          const fmTitle = (frontmatter.title || (frontmatter as any).Title || "").trim();
+          const base = path.basename(entry, ".md");
+          const candidates = new Set<string>([
+            normalizeSlugValue(fmSlug),
+            normalizeSlugValue(deriveSlugFromTitle(fmTitle || base)),
+            normalizeSlugValue(deriveSlugFromTitle(base)),
+          ]);
+          for (const v of variants) {
+            if (candidates.has(v)) return abs;
+          }
+        } catch {}
+      }
     }
+    const fallback = path.join(dir, `${provided}.md`);
+    if (fs.existsSync(fallback)) return fallback;
   }
-  // Attempt a direct filename fallback for exact matches
-  const fallback = path.join(projectsDir, `${provided}.md`);
-  return fs.existsSync(fallback) ? fallback : null;
+  return null;
 }
