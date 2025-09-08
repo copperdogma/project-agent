@@ -147,8 +147,32 @@ echo "Bootstrapping LaunchAgent…"
 launchctl bootstrap gui/$(id -u) "$PLIST_USER"
 launchctl kickstart -kp gui/$(id -u)/${LABEL_USER}
 
+# Port sanity: ensure the listener belongs to this LaunchAgent
+sleep 1
+AGENT_PID=$(launchctl print gui/$(id -u)/${LABEL_USER} 2>/dev/null | awk '/\bpid = / {print $3; exit}')
+LISTENER_PIDS=""
+if command -v lsof >/dev/null 2>&1; then
+  LISTENER_PIDS=$(lsof -tiTCP:${PORT} -sTCP:LISTEN 2>/dev/null || true)
+fi
+
+if [[ -n "${LISTENER_PIDS}" && -n "${AGENT_PID}" ]]; then
+  if ! echo " ${LISTENER_PIDS} " | grep -q " ${AGENT_PID} "; then
+    echo "Conflicting listener(s) on :${PORT}: ${LISTENER_PIDS} (agent pid=${AGENT_PID}). Killing and retrying…" >&2
+    kill -TERM ${LISTENER_PIDS} 2>/dev/null || true
+    sleep 1
+    kill -KILL ${LISTENER_PIDS} 2>/dev/null || true
+    sleep 1
+    launchctl kickstart -kp gui/$(id -u)/${LABEL_USER}
+    sleep 1
+  fi
+fi
+
 echo "Listener on :$PORT"
-lsof -nP -iTCP:${PORT} -sTCP:LISTEN || true
+if command -v lsof >/dev/null 2>&1; then
+  lsof -nP -iTCP:${PORT} -sTCP:LISTEN || true
+else
+  echo "(lsof not available)" >&2
+fi
 
 echo "LaunchAgent status:"
 launchctl print gui/$(id -u)/${LABEL_USER} | sed -n '1,140p' || true

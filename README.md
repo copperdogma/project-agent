@@ -101,12 +101,29 @@ sudo tail -n 50 /var/log/project-agent.err.log
 
 ```bash
 git pull --rebase --autostash && npm run build
-launchctl kickstart -k gui/$(id -u)/com.projectagent.mcp
+# One-time install/update per-user LaunchAgent (reads .env for VAULT_ROOT, HOST, PORT, PROJECT_ROOTS)
+bash scripts/launchagent-install.sh
+# Kickstart on demand
+launchctl kickstart -k gui/$(id -u)/com.projectagent.mcp.user
 # Optional diagnostics
-launchctl print gui/$(id -u)/com.projectagent.mcp | sed -n '1,80p'
-tail -n 50 ~/Library/Logs/project-agent.out.log
-tail -n 50 ~/Library/Logs/project-agent.err.log
+launchctl print gui/$(id -u)/com.projectagent.mcp.user | sed -n '1,80p'
+tail -n 50 ~/Library/Logs/com.projectagent.mcp.user.out.log
+tail -n 50 ~/Library/Logs/com.projectagent.mcp.user.err.log
 ```
+
+## Troubleshooting
+
+- READ_ONLY (EACCES) when creating/writing:
+  - Fix ownership/permissions on the registry dir: `sudo chown -R $USER:staff "$VAULT_ROOT/.project-agent" && chmod -R u+rwX "$VAULT_ROOT/.project-agent" && sudo chflags -R nouchg "$VAULT_ROOT/.project-agent"`
+  - If needed, move the registry aside: `mv "$VAULT_ROOT/.project-agent/projects.yaml" "$VAULT_ROOT/.project-agent/projects.yaml.bak"` and retry.
+
+- .env values with spaces:
+  - Quote them: `PROJECT_ROOTS="Projects,Notes,Project Research"`, `RATE_LIMIT_WINDOW="1 minute"`.
+
+- Port 7777 already in use after install:
+  - Remove old per-user agent and plist: `launchctl bootout gui/$(id -u)/com.projectagent.mcp && rm ~/Library/LaunchAgents/com.projectagent.mcp.plist`
+  - Re-run: `bash scripts/launchagent-install.sh`
+  - Use `scripts/status.sh` to see current listener, health, and logs.
 
 ## Scripts
 
@@ -117,6 +134,8 @@ tail -n 50 ~/Library/Logs/project-agent.err.log
 - `npm run lint` – ESLint
 - `npm run format` – Prettier
 - `npm run generate:certs` – create dev TLS certs in `certs/`
+- `scripts/launchagent-install.sh` – install/start per-user LaunchAgent (reads .env; stops system daemon; kills rogue listeners; prints status)
+- `scripts/status.sh` – print listener, agent status, health, repo ahead/behind, and recent auto-push logs
 
 ## License
 
