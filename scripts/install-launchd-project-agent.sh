@@ -73,6 +73,7 @@ cat > "/tmp/${LABEL}.plist" <<PLIST
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key><string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    <key>HOME</key><string>/Users/${USERNAME}</string>
     <key>VAULT_ROOT</key><string>${VAULT_DIR}</string>
     <key>HOST</key><string>${HOST}</string>
     <key>PORT</key><string>${PORT}</string>

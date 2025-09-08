@@ -12,6 +12,7 @@ import { writeAudit } from "../audit.js";
 import { allow as rateAllow } from "../rate.js";
 import { ensureSectionTop } from "../sections.js";
 import { moveDocument } from "../move.js";
+import { pushCurrentRepo } from "../gitutil.js";
 
 export function registerProjectTools(mcpServer: McpServer): void {
   mcpServer.registerTool(
@@ -382,6 +383,22 @@ export function registerProjectTools(mcpServer: McpServer): void {
         if (args?.keepSlug !== undefined) mi.keepSlug = Boolean(args.keepSlug);
         const res = await moveDocument(mi);
         writeAudit({ ts: new Date().toISOString(), email, tool: "project_move_document", slug: String(args?.slug || ""), summary: ["move"], commit: res.commit });
+        return { content: [{ type: "text", text: JSON.stringify(res) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
+    },
+  );
+
+  // Diagnostic: trigger a push of the vault repo
+  mcpServer.registerTool(
+    "server_push",
+    { description: "Manually push the vault git repository (HEAD to current branch). Returns ok/remote/branch/message.", inputSchema: {} },
+    async () => {
+      try {
+        const root = process.env.VAULT_ROOT || "";
+        const repoRoot = root || process.cwd();
+        const res = await pushCurrentRepo(repoRoot);
         return { content: [{ type: "text", text: JSON.stringify(res) }] };
       } catch (err) {
         return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
