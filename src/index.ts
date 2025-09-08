@@ -13,6 +13,7 @@ import { buildSnapshot } from "./snapshot.js";
 import { getDocument } from "./document.js";
 import { listProjects } from "./list.js";
 import { registerProjectTools } from "./tools/register.js";
+import { checkVaultWritable } from "./health.js";
 
 // Optional HTTPS/mTLS if cert and key are provided
 const tlsCertPath = process.env.TLS_CERT_PATH;
@@ -304,9 +305,12 @@ app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
   }
 });
 
+const VAULT_WRITABLE = checkVaultWritable();
+
 app.get("/health", async (_req: FastifyRequest, _reply: FastifyReply) => ({
   status: "ok",
   uptime_s: Math.round(process.uptime()),
+  vault_writable: VAULT_WRITABLE,
 }));
 
 // Minimal readiness root

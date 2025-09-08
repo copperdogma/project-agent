@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { simpleGit } from "simple-git";
 import { getVaultRoot, findGitRoot } from "./vault.js";
+import { maybeAutoPush } from "./gitutil.js";
 
 export interface UndoInput {
   commit: string;
@@ -110,8 +111,7 @@ export async function undoCommit(input: UndoInput): Promise<UndoResult> {
       } catch {}
     }
   }
-
+  try { await maybeAutoPush(repoRoot); } catch {}
   return { revert_commit: revertCommit || null, diff };
 }
-
 

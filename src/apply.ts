@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { simpleGit } from "simple-git";
 import { getVaultRoot, readFileSafely, writeFileSafely, findGitRoot } from "./vault.js";
+import { findFileBySlug } from "./resolve.js";
+import { maybeAutoPush } from "./gitutil.js";
 
 function parseFrontmatter(raw: string): { contentStart: number } {
   const lines = raw.replace(/^\uFEFF/, "").split(/\n|\r\n|\r/);
@@ -14,32 +16,6 @@ function parseFrontmatter(raw: string): { contentStart: number } {
     if (((lines[idx] ?? "").trim() === "---")) idx += 1;
   }
   return { contentStart: idx };
-}
-
-function findFileBySlug(slug: string, vaultRoot: string): string | null {
-  const projectsDir = path.join(vaultRoot, "Projects");
-  if (fs.existsSync(projectsDir) && fs.statSync(projectsDir).isDirectory()) {
-    const entries = fs.readdirSync(projectsDir);
-    for (const entry of entries) {
-      if (!entry.toLowerCase().endsWith(".md")) continue;
-      const abs = path.join(projectsDir, entry);
-      try {
-        const raw = fs.readFileSync(abs, "utf8");
-        // very small frontmatter parse for slug/title fallback
-        const fm = /\nslug:\s*(.*)\n/i.exec(raw);
-        const title = /\ntitle:\s*(.*)\n/i.exec(raw);
-        const base = path.basename(entry, ".md");
-        const candidates = new Set<string>([
-          String(fm?.[1] || "").replace(/^['"]|['"]$/g, "").trim(),
-          base.replace(/\s+/g, "-").toLowerCase(),
-          String(title?.[1] || base).replace(/^['"]|['"]$/g, "").trim().replace(/\s+/g, "-").toLowerCase(),
-        ].filter(Boolean) as string[]);
-        if (candidates.has(slug)) return abs;
-      } catch {}
-    }
-  }
-  const fallback = path.join(projectsDir, `${slug}.md`);
-  return fs.existsSync(fallback) ? fallback : null;
 }
 
 function formatDateYYYYMMDD(timezone: string): string {
@@ -188,6 +164,8 @@ async function gitCommitAndDiff(repoRoot: string, filePathRelativeToRepo: string
     }
     // eslint-disable-next-line no-console
     console.info("gitCommitAndDiff: committed", { repoRoot, filePathRelativeToRepo, commit });
+    // Best-effort auto-push if enabled
+    try { await maybeAutoPush(repoRoot); } catch {}
     return { commit, diff };
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -643,5 +621,3 @@ export async function previewOps(input: ApplyOpsInput): Promise<PreviewOpsResult
     return { ok: false, would_change: false, notes: [msg] };
   }
 }
-
-

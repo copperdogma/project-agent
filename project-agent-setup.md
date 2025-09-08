@@ -1,6 +1,6 @@
 # Project Agent (MCP) on macOS via Tailnet — LaunchDaemon Setup
 
-This guide provisions the Project Agent Node/Fastify server as a system LaunchDaemon on macOS. By default it binds to `0.0.0.0:7777` for direct LAN/tailnet HTTP access; you can optionally enable Tailnet HTTPS via Tailscale Serve. It also includes an optional LaunchDaemon that auto pull/pushes your Obsidian vault git repo every 3 minutes.
+This guide provisions the Project Agent Node/Fastify server as a system LaunchDaemon on macOS. By default it binds to a port (e.g., `127.0.0.1:7777`) and is intended to be exposed as its own origin (no subpath) via a proxy/tunnel. It also includes an optional LaunchDaemon that auto pull/pushes your Obsidian vault git repo every 3 minutes.
 
 Works non-interactively, idempotently, and persists across reboots.
 
@@ -10,13 +10,25 @@ Works non-interactively, idempotently, and persists across reboots.
 - Vault path (git repo): `/Users/occam/Documents/obsidian`
 - Main daemon label/plist: `com.projectagent.mcp` → `/Library/LaunchDaemons/com.projectagent.mcp.plist`
 - Git push daemon label/plist: `com.projectagent.gitpush` → `/Library/LaunchDaemons/com.projectagent.gitpush.plist`
-- Service env: `HOST=0.0.0.0`, `PORT=7777` (use `127.0.0.1` with Serve-only)
-- Unauthenticated endpoints for verification: `GET /version`, `GET /health`
+- Service env: `HOST=127.0.0.1`, `PORT=7777` (bind loopback when fronted by a proxy)
+- Unauthenticated endpoints for verification: `GET /version`, `GET /health` (also reports `vault_writable`)
 - Authentication for other routes uses `DEV_BEARER_TOKEN` and `x-user-email` in `EMAIL_ALLOWLIST`
 
 Note on macOS privacy (TCC): if your vault is under `~/Documents`, a root LaunchDaemon may get EPERM. Run the daemon as the target user (e.g., `occam`) to ensure access.
 
-## Networking: Tailscale (Tailnet + Public HTTPS)
+## Networking and Origins (SSE requirement)
+
+MCP over SSE must be presented at the origin root. Do not place this service under a path prefix (e.g., `/project-agent`). If you proxy under a subpath, the SSE client will attempt to POST to the root (e.g., `https://host/messages?...`) and tool listing/calls will fail.
+
+Recommended pattern when running multiple MCP servers:
+
+- Run each MCP on its own local port (`127.0.0.1:<port>`).
+- Expose each as its own origin (distinct hostname) that maps the origin root to exactly one backend port.
+- Avoid subpath mappings for MCP.
+
+Examples for exposing separate origins are provided below for Tailscale (tailnet only) and Cloudflare Tunnel (public). If you prefer to manage your own domain and TLS, see the Caddy/Nginx section.
+
+## Tailscale (Tailnet + Optional Public HTTPS)
 - Install the Tailscale CLI and log in so the machine has a tailnet IP (100.64.0.0/10):
   ```bash
   brew install tailscale
@@ -97,7 +109,7 @@ cat > /tmp/com.projectagent.mcp.plist <<PLIST
     <key>PATH</key><string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
     <key>VAULT_ROOT</key><string>${VAULT_DIR}</string>
     <key>PORT</key><string>7777</string>
-    <!-- For public HTTPS via Serve/Funnel, bind to loopback only -->
+    <!-- Bind loopback when fronted by Serve/Funnel/Proxy -->
     <key>HOST</key><string>127.0.0.1</string>
     <key>READONLY</key><string>false</string>
     <key>DEV_BEARER_TOKEN</key><string>set-a-strong-token</string>
@@ -126,7 +138,10 @@ sudo launchctl load -w "$MCP_PLIST"
 sudo launchctl kickstart -k system/com.projectagent.mcp || true
 sudo launchctl print system/com.projectagent.mcp | sed -n '1,150p'
 
-# --- Optional: auto pull/push daemon every 3 minutes ---
+# --- Optional: legacy auto pull/push daemon every 3 minutes ---
+# Note: The Project Agent now attempts a best‑effort git push after write commits
+# using the repository's current branch and `GIT_REMOTE_NAME` (default `origin`).
+# This helper remains for environments that prefer timed push or external sync.
 cat > /tmp/obsidian-auto-push.sh <<'SH'
 #!/usr/bin/env bash
 set -e
@@ -170,18 +185,71 @@ curl -s http://127.0.0.1:7777/health | cat; echo
 
 # Tailnet HTTPS (Serve) status (if configured on this node)
 if command -v tailscale >/dev/null 2>&1; then
-  tailscale serve status || true
+tailscale serve status || true
 fi
 ```
 
-## Remote Reachability (tailnet-only)
-Tailnet HTTPS via Serve (optional):
+### Optional: second MCP instance (separate origin/port)
+Use this template to run another MCP server (this app or a different repo) on a different local port and LaunchDaemon label. Adjust `APP_DIR2`, `LABEL2`, and `PORT2`.
+
+```bash
+set -euo pipefail
+
+APP_DIR2="/Users/occam/MCPs/twitter-scraper"   # change to the other tool's path
+LABEL2="com.twitter.scraper"                   # unique label for launchd
+PORT2="7781"                                   # unique port for this tool
+NODE_PATH="$(/usr/bin/which node || true)"; [ -x "$NODE_PATH" ] || NODE_PATH="/opt/homebrew/bin/node"
+
+# Build if this is a Node/TypeScript app
+if [ -d "$APP_DIR2" ]; then
+  (cd "$APP_DIR2" && [ -f package.json ] && npm ci && npm run build) || true
+fi
+
+cat > /tmp/${LABEL2}.plist <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>${LABEL2}</string>
+  <key>UserName</key><string>occam</string>
+  <key>WorkingDirectory</key><string>${APP_DIR2}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${NODE_PATH}</string>
+    <string>${APP_DIR2}/dist/index.js</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    <key>HOST</key><string>127.0.0.1</string>
+    <key>PORT</key><string>${PORT2}</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/var/log/${LABEL2}.out.log</string>
+  <key>StandardErrorPath</key><string>/var/log/${LABEL2}.err.log</string>
+</dict></plist>
+PLIST
+
+sudo mv /tmp/${LABEL2}.plist "/Library/LaunchDaemons/${LABEL2}.plist"
+sudo chown root:wheel "/Library/LaunchDaemons/${LABEL2}.plist"
+sudo chmod 644 "/Library/LaunchDaemons/${LABEL2}.plist"
+/usr/bin/plutil -lint "/Library/LaunchDaemons/${LABEL2}.plist"
+sudo touch "/var/log/${LABEL2}.out.log" "/var/log/${LABEL2}.err.log"
+sudo chmod 664 "/var/log/${LABEL2}.out.log" "/var/log/${LABEL2}.err.log"
+sudo chown root:wheel "/var/log/${LABEL2}.out.log" "/var/log/${LABEL2}.err.log"
+sudo launchctl unload "/Library/LaunchDaemons/${LABEL2}.plist" 2>/dev/null || true
+sudo launchctl load -w "/Library/LaunchDaemons/${LABEL2}.plist"
+sudo launchctl print "system/${LABEL2}" | sed -n '1,80p' || true
+```
+
+## Remote Reachability
+Tailnet HTTPS via Serve (tailnet-only):
 ```bash
 curl https://<device-name>.<tailnet>.ts.net/version
 curl https://<device-name>.<tailnet>.ts.net/health
 ```
 
-Direct HTTP (default HOST=0.0.0.0):
+Direct HTTP (if you bind `HOST=0.0.0.0` for tailnet/LAN):
 ```bash
 curl http://<TAILNET_IP>:7777/version
 curl http://<TAILNET_IP>:7777/health
@@ -221,7 +289,8 @@ Access (from any device on your tailnet):
 - https://<device-name>.<tailnet>.ts.net/
 
 Notes:
-- Default in this guide is direct HTTP on `0.0.0.0:7777`. Serve works with that, but for extra hardening, you can switch to loopback-only: set `HOST=127.0.0.1` in the plist and reload with `launchctl`.
+- Keep this service at the origin root; do not configure subpaths for MCP.
+- For extra hardening, bind loopback only: set `HOST=127.0.0.1` in the plist and reload with `launchctl`.
 - The `--yes` and `--bg` flags must precede the target on this CLI.
 - If you see “Serve is not enabled on your tailnet…”, open the printed approval link, enable only HTTPS, then rerun the command.
 
@@ -260,8 +329,9 @@ curl -sS https://<device-name>.<tailnet>.ts.net/version | cat
 Notes:
 - A minor `client version != tailscaled version` warning is safe to ignore.
 - Keep your app’s auth in place since this is public.
+- Important: Funnel exposes HTTPS on the device’s `*.ts.net` hostname at port 443. It does not provide multiple public HTTPS origins on distinct external ports. If you need multiple MCP servers publicly, use distinct hostnames via a reverse proxy or Cloudflare Tunnel (below), and map each hostname’s root to a single backend port.
 
-### Option C — Public HTTPS via Cloudflare Tunnel (no open ports)
+### Option C — Public HTTPS via Cloudflare Tunnel (multiple hostnames, no open ports)
 This maps a custom domain to the local service over an outbound tunnel.
 
 Requirements: A Cloudflare account with your domain on Cloudflare DNS.
@@ -272,8 +342,9 @@ brew install cloudflared
 cloudflared tunnel login                       # authenticate in browser
 cloudflared tunnel create project-agent        # creates a tunnel and credentials
 
-# Map a hostname to this tunnel (replace with your domain)
+# Map hostnames to this tunnel (replace with your domain)
 cloudflared tunnel route dns project-agent agent.example.com
+cloudflared tunnel route dns project-agent twitter.example.com
 
 # Create config (~/.cloudflared/config.yml)
 cat > ~/.cloudflared/config.yml <<'YAML'
@@ -282,6 +353,8 @@ credentials-file: ~/.cloudflared/$(ls ~/.cloudflared | grep json | head -n1)
 ingress:
   - hostname: agent.example.com
     service: http://127.0.0.1:7777
+  - hostname: twitter.example.com
+    service: http://127.0.0.1:7781
   - service: http_status:404
 YAML
 
@@ -299,6 +372,9 @@ Use if you control DNS and can forward ports 80/443 to this Mac.
   agent.example.com {
       reverse_proxy 127.0.0.1:7777
   }
+  twitter.example.com {
+      reverse_proxy 127.0.0.1:7781
+  }
   EOF'
   sudo caddy run --config /usr/local/etc/Caddyfile  # or: brew services start caddy
   ```
@@ -313,6 +389,7 @@ Use if you control DNS and can forward ports 80/443 to this Mac.
 
 Hardening tip:
 - If using Serve/Funnel/Cloudflare, set `HOST=127.0.0.1` (already configured above) so the app is only reachable via the proxy.
+- MCP servers must be exposed at the origin root. Use separate hostnames (preferred) or separate tailnet HTTP origins, not subpaths.
 
 ## Connect Claude Desktop (SSE)
 1) Ensure public HTTPS works (Funnel or another reverse proxy):
@@ -320,9 +397,14 @@ Hardening tip:
    - `curl -iskN https://<device>.<tailnet>.ts.net/sse` (you should see an initial `event: endpoint`)
 2) In Claude Desktop → Settings → Developer → MCP Servers → Add custom connector:
    - Name: Project Agent
-   - URL: `https://<device>.<tailnet>.ts.net/sse`
+   - URL: `https://<device>.<tailnet>.ts.net/sse` (tailnet Serve) or `https://agent.example.com/sse` (Cloudflare/Caddy hostname)
    - Leave OAuth fields empty
-3) Click Add, then Connect. On the Mac mini, watch logs:
+3) Multiple tools (example hostnames):
+   - Project Agent: `https://agent.example.com/sse`
+   - Twitter Scraper: `https://twitter.example.com/sse`
+   Ensure each hostname maps its origin root to a single backend port.
+
+4) Click Add, then Connect. On the Mac mini, watch logs:
    - `sudo tail -f /var/log/project-agent.out.log`
    - You should see: GET `/sse` ("sse session registered"), followed by POST `/sse` ("forwarded to transport").
 

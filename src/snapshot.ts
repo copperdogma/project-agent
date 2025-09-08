@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { simpleGit } from "simple-git";
 import { getVaultRoot, findGitRoot } from "./vault.js";
+import { findFileBySlug } from "./resolve.js";
 import { deriveSlugFromTitle } from "./slug.js";
 
 export interface SnapshotPayload {
@@ -59,33 +60,7 @@ function parseFrontmatter(raw: string): { frontmatter: Record<string, string>; c
   return { frontmatter: fm, contentStart: idx };
 }
 
-function findFileBySlug(slug: string, vaultRoot: string): string | null {
-  const projectsDir = path.join(vaultRoot, "Projects");
-  if (fs.existsSync(projectsDir) && fs.statSync(projectsDir).isDirectory()) {
-    const entries = fs.readdirSync(projectsDir);
-    for (const entry of entries) {
-      if (!entry.toLowerCase().endsWith(".md")) continue;
-      const abs = path.join(projectsDir, entry);
-      try {
-        const raw = fs.readFileSync(abs, "utf8");
-        const { frontmatter } = parseFrontmatter(raw);
-        const fmSlug = (frontmatter.slug || (frontmatter as any).Slug || "").trim();
-        const fmTitle = (frontmatter.title || (frontmatter as any).Title || "").trim();
-        const fileBase = path.basename(entry, ".md");
-        const candidates = new Set<string>([
-          fmSlug,
-          deriveSlugFromTitle(fmTitle || fileBase),
-          deriveSlugFromTitle(fileBase),
-        ].filter(Boolean) as string[]);
-        if (candidates.has(slug)) {
-          return abs;
-        }
-      } catch {}
-    }
-  }
-  const fallback = path.join(projectsDir, `${slug}.md`);
-  return fs.existsSync(fallback) ? fallback : null;
-}
+// findFileBySlug imported from resolve.ts
 
 function parseSectionsPreserveOrder(raw: string, startIndex: number): { toc: string[]; sections: Record<string, string[]> } {
   const lines = raw.replace(/^\uFEFF/, "").split(/\n|\r\n|\r/);

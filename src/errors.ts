@@ -75,6 +75,10 @@ export function errorFromException(err: unknown): StandardError {
   if (upper.startsWith("RATE_LIMITED")) {
     return makeError("RATE_LIMITED", message, {});
   }
+  // Filesystem/permission issues → treat as READ_ONLY for safety and clarity
+  if (upper.includes("EACCES") || upper.includes("EPERM") || upper.includes("FILE_LOCKED")) {
+    return makeError("READ_ONLY", message, {});
+  }
   if (upper.startsWith("UNAUTHORIZED") || upper.startsWith("FORBIDDEN")) {
     const code: ErrorCode = upper.startsWith("FORBIDDEN")
       ? "FORBIDDEN_EMAIL"
@@ -84,5 +88,4 @@ export function errorFromException(err: unknown): StandardError {
   // Fallback
   return makeError("INTERNAL", message || "Internal error", {});
 }
-
 

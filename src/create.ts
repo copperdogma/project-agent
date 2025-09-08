@@ -3,6 +3,7 @@ import path from "path";
 import { getVaultRoot, writeFileSafely, findGitRoot } from "./vault.js";
 import { simpleGit } from "simple-git";
 import { deriveSlugFromTitle } from "./slug.js";
+import { maybeAutoPush } from "./gitutil.js";
 
 function formatDateYYYYMMDD(timezone: string): string {
   const dt = new Date();
@@ -182,6 +183,7 @@ export async function createProject(input: CreateProjectInput): Promise<CreatePr
           throw err;
         }
       }
+      try { await maybeAutoPush(repoRoot); } catch {}
     }
   } catch {
     // best-effort commit; ignore failures
@@ -189,5 +191,4 @@ export async function createProject(input: CreateProjectInput): Promise<CreatePr
 
   return { title, slug, path: relPath };
 }
-
 

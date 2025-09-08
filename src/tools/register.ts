@@ -10,6 +10,7 @@ import { undoCommit } from "../undo.js";
 import { errorFromException, makeError } from "../errors.js";
 import { writeAudit } from "../audit.js";
 import { allow as rateAllow } from "../rate.js";
+import { ensureSectionTop } from "../sections.js";
 
 export function registerProjectTools(mcpServer: McpServer): void {
   mcpServer.registerTool(
@@ -289,6 +290,32 @@ export function registerProjectTools(mcpServer: McpServer): void {
         const payload = await createProject(input);
         writeAudit({ ts: new Date().toISOString(), email, tool: "project_create", slug: payload?.slug || input?.slug, summary: ["create"], commit: null });
         return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+      } catch (err) {
+        return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
+      }
+    },
+  );
+
+  mcpServer.registerTool(
+    "project_create_section",
+    {
+      description: "Create a new section heading if missing. Inserts as the first section (top of document, before existing sections).",
+      inputSchema: { slug: z.string(), name: z.string() },
+    },
+    async (args: any) => {
+      try {
+        const readonly = String(process.env.READONLY || "false").toLowerCase() === "true";
+        if (readonly) return { content: [{ type: "text", text: JSON.stringify(makeError("READ_ONLY", "Server in read-only mode", {})) }] };
+        const email = String(process.env.EMAIL_OVERRIDE || "anonymous");
+        const key = `${email}:${String(args?.slug || "")}`;
+        const cap = Number(process.env.RATE_LIMIT_WRITE_MAX || 20);
+        const windowSec = Number(process.env.RATE_LIMIT_WRITE_WINDOW_S || 60);
+        if (!rateAllow(key, cap, windowSec)) return { content: [{ type: "text", text: JSON.stringify(makeError("RATE_LIMITED", "Write rate limit exceeded", { key })) }] };
+        const slug = String(args?.slug || "");
+        const name = String(args?.name || "");
+        const res = await ensureSectionTop(slug, name);
+        writeAudit({ ts: new Date().toISOString(), email, tool: "project_create_section", slug, summary: res.created ? ["create_section"] : ["exists"], commit: res.commit });
+        return { content: [{ type: "text", text: JSON.stringify(res) }] };
       } catch (err) {
         return { content: [{ type: "text", text: JSON.stringify(errorFromException(err)) }] };
       }

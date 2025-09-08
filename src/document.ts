@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { simpleGit } from "simple-git";
 import { getVaultRoot, readFileSafely, findGitRoot } from "./vault.js";
-import { deriveSlugFromTitle } from "./slug.js";
+import { findFileBySlug } from "./resolve.js";
 
 function parseFrontmatter(raw: string): { frontmatter: Record<string, string>; contentStart: number } {
   const lines = raw.split(/\n|\r\n|\r/);
@@ -28,35 +28,7 @@ function parseFrontmatter(raw: string): { frontmatter: Record<string, string>; c
   return { frontmatter: fm, contentStart: idx };
 }
 
-function findFileBySlug(slug: string, vaultRoot: string): string | null {
-  const projectsDir = path.join(vaultRoot, "Projects");
-  if (fs.existsSync(projectsDir) && fs.statSync(projectsDir).isDirectory()) {
-    const entries = fs.readdirSync(projectsDir);
-    for (const entry of entries) {
-      if (!entry.toLowerCase().endsWith(".md")) continue;
-      const abs = path.join(projectsDir, entry);
-      try {
-        const raw = fs.readFileSync(abs, "utf8");
-        const { frontmatter } = parseFrontmatter(raw);
-        const fmSlug = (frontmatter.slug || (frontmatter as any).Slug || "").trim();
-        const fmTitle = (frontmatter.title || (frontmatter as any).Title || "").trim();
-        const fileBase = path.basename(entry, ".md");
-        const candidates = [
-          fmSlug,
-          deriveSlugFromTitle(fmTitle || fileBase),
-          deriveSlugFromTitle(fileBase),
-        ].filter(Boolean) as string[];
-        const slugNorm = String(slug || "").trim().toLowerCase();
-        const match = candidates.some((c) => String(c).trim().toLowerCase() === slugNorm);
-        if (match) {
-          return abs;
-        }
-      } catch {}
-    }
-  }
-  const fallback = path.join(projectsDir, `${slug}.md`);
-  return fs.existsSync(fallback) ? fallback : null;
-}
+// findFileBySlug imported from resolve.ts
 
 async function readCurrentCommit(vaultRoot: string): Promise<string | null> {
   try {
