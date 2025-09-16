@@ -201,17 +201,32 @@ sudo launchctl load -w "$MCP_PLIST"
 sudo launchctl kickstart -k system/com.projectagent.mcp || true
 sudo launchctl print system/com.projectagent.mcp | sed -n '1,150p'
 
-# --- Optional: legacy auto pull/push daemon every 3 minutes ---
-# Note: The Project Agent now attempts a best‑effort git push after write commits
-# using the repository's current branch and `GIT_REMOTE_NAME` (default `origin`).
-# This helper remains for environments that prefer timed push or external sync.
+# --- Optional: timed auto-commit + push daemon (system domain) ---
+# Preferred: use the per-user LaunchAgent in this repo
+#   bash /Users/occam/MCPs/scripts/setup-user-gitbackup-agent.sh
+# If you must run in the system domain, ensure the daemon runs as the vault user
+# (UserName=occam) and use a safer script that commits + pushes. See also:
+# project-agent/docs/gitpush-daemon-user.md
 cat > /tmp/obsidian-auto-push.sh <<'SH'
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 VAULT="/Users/occam/Documents/obsidian"
+GIT="/usr/bin/git"
 [ -d "$VAULT/.git" ] || exit 0
-/usr/bin/git -C "$VAULT" pull --rebase --autostash origin main || true
-/usr/bin/git -C "$VAULT" push -q origin HEAD:main || true
+# Skip if another git process is committing
+[ -f "$VAULT/.git/index.lock" ] && exit 0
+# Ensure repo marked safe for this context
+$GIT config --global --add safe.directory "$VAULT" >/dev/null 2>&1 || true
+BRANCH="$($GIT -C "$VAULT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
+STATUS="$($GIT -C "$VAULT" status --porcelain 2>/dev/null || true)"
+if [ -n "$STATUS" ]; then
+  TS="$(date '+%Y-%m-%d %H:%M:%S %Z')"
+  $GIT -C "$VAULT" add -A
+  $GIT -C "$VAULT" -c user.name='Obsidian Backup' -c user.email='obsidian@local' \
+    commit -m "vault backup: ${TS}" || true
+fi
+$GIT -C "$VAULT" pull --rebase --autostash origin "$BRANCH" >/dev/null 2>&1 || true
+$GIT -C "$VAULT" push -q origin HEAD:"$BRANCH" >/dev/null 2>&1 || true
 SH
 sudo mv /tmp/obsidian-auto-push.sh /usr/local/bin/obsidian-auto-push.sh
 sudo chmod +x /usr/local/bin/obsidian-auto-push.sh
@@ -221,6 +236,7 @@ cat > /tmp/com.projectagent.gitpush.plist <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>com.projectagent.gitpush</string>
+  <key>UserName</key><string>occam</string>
   <key>WorkingDirectory</key><string>${VAULT_DIR}</string>
   <key>ProgramArguments</key>
   <array><string>/usr/local/bin/obsidian-auto-push.sh</string></array>
