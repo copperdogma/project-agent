@@ -393,7 +393,7 @@ export function registerProjectTools(mcpServer: McpServer): void {
   // Diagnostic: trigger a push of the vault repo
   mcpServer.registerTool(
     "server_push",
-    { description: "Manually push the vault git repository (HEAD to current branch). Returns ok/remote/branch/message.", inputSchema: {} },
+    { description: "Manually push the vault git repository (HEAD to current branch). Auto-stages/commits local changes, then tries push → rebase+push → force-with-lease → force. Returns ok/remote/branch/step/message.", inputSchema: {} },
     async () => {
       try {
         const root = process.env.VAULT_ROOT || "";
