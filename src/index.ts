@@ -103,6 +103,21 @@ const sseSessions = new Map<string, TransportEntry>();
 let lastSessionId: string | null = null;
 
 function extractSessionId(req: FastifyRequest): string | null {
+  // 1) Header forms (preferred by some clients, including Claude)
+  try {
+    const h = req.headers || {} as any;
+    const headerKeys = [
+      "x-mcp-session-id",
+      "x-session-id",
+      "x-sse-session-id",
+    ];
+    for (const k of headerKeys) {
+      const v = (h[k] as string | string[] | undefined) || (h[k.toLowerCase()] as any);
+      if (Array.isArray(v) && v.length > 0 && typeof v[0] === "string") return v[0] as string;
+      if (typeof v === "string" && v) return v;
+    }
+  } catch {}
+  // 2) Query param form (?sessionId=...)
   try {
     const raw = (req.raw as any)?.url as string | undefined;
     if (raw && raw.includes("?")) {
@@ -357,8 +372,20 @@ app.get("/version", async (_req: FastifyRequest, _reply: FastifyReply) => {
   }
 });
 
+// HEAD probes: return 200 and proper content-type without creating a session
+app.head("/mcp/sse", async (_req: FastifyRequest, reply: FastifyReply) => {
+  return reply.header("Content-Type", "text/event-stream").code(200).send();
+});
+app.head("/sse", async (_req: FastifyRequest, reply: FastifyReply) => {
+  return reply.header("Content-Type", "text/event-stream").code(200).send();
+});
+
 // Start SSE session: GET establishes stream
-app.get("/mcp/sse", async (_req: FastifyRequest, reply: FastifyReply) => {
+app.get("/mcp/sse", async (req: FastifyRequest, reply: FastifyReply) => {
+  // Defensive: if a HEAD slipped through, do not create a session
+  if ((req as any).method === "HEAD") {
+    return reply.header("Content-Type", "text/event-stream").code(200).send();
+  }
   const mcp = new McpServer({ name: "project-agent", version: "1.0.0" });
   registerMcpTools(mcp);
   const transport = new SSEServerTransport("/mcp/sse", reply.raw);
@@ -374,6 +401,17 @@ app.get("/mcp/sse", async (_req: FastifyRequest, reply: FastifyReply) => {
   } catch {}
   await mcp.connect(transport);
   sseSessions.set(transport.sessionId, { transport, server: mcp });
+  // Remove the session automatically when the stream closes
+  try {
+    const sid = transport.sessionId;
+    (reply.raw as any).on("close", () => {
+      try {
+        sseSessions.delete(sid);
+        if (lastSessionId === sid) lastSessionId = null;
+        (app as any).log?.info({ sessionId: sid, size: sseSessions.size }, "sse session closed");
+      } catch {}
+    });
+  } catch {}
   try {
     (app as any).log?.info(
       {
@@ -389,7 +427,10 @@ app.get("/mcp/sse", async (_req: FastifyRequest, reply: FastifyReply) => {
 });
 
 // Alias endpoints for clients expecting "/sse" path
-app.get("/sse", async (_req: FastifyRequest, reply: FastifyReply) => {
+app.get("/sse", async (req: FastifyRequest, reply: FastifyReply) => {
+  if ((req as any).method === "HEAD") {
+    return reply.header("Content-Type", "text/event-stream").code(200).send();
+  }
   const mcp = new McpServer({ name: "project-agent", version: "1.0.0" });
   registerMcpTools(mcp);
   const transport = new SSEServerTransport("/sse", reply.raw);
@@ -404,6 +445,17 @@ app.get("/sse", async (_req: FastifyRequest, reply: FastifyReply) => {
   } catch {}
   await mcp.connect(transport);
   sseSessions.set(transport.sessionId, { transport, server: mcp });
+  // Remove the session automatically when the stream closes
+  try {
+    const sid = transport.sessionId;
+    (reply.raw as any).on("close", () => {
+      try {
+        sseSessions.delete(sid);
+        if (lastSessionId === sid) lastSessionId = null;
+        (app as any).log?.info({ sessionId: sid, size: sseSessions.size }, "sse session closed (/sse)");
+      } catch {}
+    });
+  } catch {}
   try {
     (app as any).log?.info(
       {
