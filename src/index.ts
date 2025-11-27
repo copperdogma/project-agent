@@ -123,12 +123,12 @@ function extractSessionId(req: FastifyRequest): string | null {
     if (raw && raw.includes("?")) {
       const qs = raw.slice(raw.indexOf("?") + 1);
       const params = new URLSearchParams(qs);
-      const v = params.get("sessionId");
+      const v = params.get("sessionId") || params.get("session_id");
       if (v) return v;
     }
   } catch {}
-  const q = (req as any).query as { sessionId?: string } | undefined;
-  return q?.sessionId ?? null;
+  const q = (req as any).query as { sessionId?: string; session_id?: string } | undefined;
+  return q?.sessionId ?? q?.session_id ?? null;
 }
 
 function registerMcpTools(mcpServer: McpServer): void {
@@ -188,138 +188,6 @@ function registerMcpTools(mcpServer: McpServer): void {
   registerProjectTools(mcpServer);
 }
 
-// Authentication/authorization preHandler
-const DEV_BEARER_TOKEN = process.env.DEV_BEARER_TOKEN;
-const EMAIL_ALLOWLIST = (
-  process.env.EMAIL_ALLOWLIST || "cam.marsollier@gmail.com"
-)
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-const EMAIL_OVERRIDE = process.env.EMAIL_OVERRIDE;
-
-app.addHook("preHandler", async (req: FastifyRequest, reply: FastifyReply) => {
-  // Skip auth for health/version and basic readiness endpoints
-  if (req.url === "/health" || req.url === "/version") return;
-  const pathOnly = req.url.split("?")[0] || "";
-  const isSsePath = pathOnly.startsWith("/mcp/sse") || pathOnly.startsWith("/sse");
-  if (pathOnly === "/" || pathOnly === "/mcp") {
-    return;
-  }
-  // Allow well-known OAuth discovery/resource probes without auth
-  if (pathOnly.startsWith("/.well-known/")) {
-    return;
-  }
-  // Allow connector registration probe without auth
-  if (pathOnly === "/register") {
-    return;
-  }
-  // Allow HEAD/GET on SSE endpoints without auth so clients can establish the stream
-  if ((req.method === "HEAD" || req.method === "GET") && isSsePath) return;
-  // Allow POST to /mcp/sse/:sessionId when session exists (already authenticated at session creation)
-  if (req.method === "POST" && (pathOnly.startsWith("/mcp/sse/") || pathOnly.startsWith("/sse/"))) {
-    const parts = pathOnly.split("/");
-    const sessionId = parts[parts.length - 1];
-    if (sessionId && sseSessions.has(sessionId)) return;
-  }
-  // Also allow POST to /mcp/sse?sessionId=... (query param form)
-  if (req.method === "POST" && (pathOnly === "/mcp/sse" || pathOnly === "/sse")) {
-    const sessionId = extractSessionId(req) || "";
-    if (sessionId && sseSessions.has(sessionId)) return;
-    // Fallback: if exactly one session exists, allow it (dev convenience)
-    if (!sessionId && (sseSessions.size === 1 || lastSessionId)) return;
-  }
-
-  // When HTTPS with requestCert enabled, use client certificate subject as signal (if provided)
-  const hasClientCert = (req.socket as any)?.authorized === true;
-
-  // Dev bearer token path (only when provided)
-  let isAuthenticated = false;
-  if (DEV_BEARER_TOKEN) {
-    const auth = req.headers["authorization"];
-    if (auth && typeof auth === "string" && auth.startsWith("Bearer ")) {
-      const token = auth.substring("Bearer ".length);
-      if (token === DEV_BEARER_TOKEN) {
-        isAuthenticated = true;
-      }
-    }
-    // Fallback: allow token via query on MCP SSE endpoints for dev convenience
-    if (!isAuthenticated && isSsePath) {
-      const q = (req as any).query || {};
-      if (q.token && q.token === DEV_BEARER_TOKEN) {
-        isAuthenticated = true;
-      }
-    }
-  }
-
-  // mTLS path: if client cert is required, enforce authorization flag
-  if (!isAuthenticated && requireClientCert) {
-    if (!hasClientCert) {
-      return reply
-        .code(401)
-        .send({
-          error: {
-            code: "UNAUTHORIZED",
-            message: "Client certificate required",
-            details: {},
-          },
-        });
-    }
-    isAuthenticated = true;
-  }
-
-  if (!isAuthenticated && (httpsOptions as any)?.requestCert) {
-    // If cert requested but not strictly required, allow but continue to email check
-    isAuthenticated = true;
-  }
-
-  if (!isAuthenticated) {
-    return reply
-      .code(401)
-      .send({
-        error: {
-          code: "UNAUTHORIZED",
-          message: "Missing/invalid credentials",
-          details: {},
-        },
-      });
-  }
-
-  // Enforce email allowlist via header; allow override in dev
-  const q = (req as any).query || {};
-  const emailHeader =
-    (req.headers["x-user-email"] as string | undefined) ||
-    (isSsePath ? (q.email as string | undefined) : undefined) ||
-    EMAIL_OVERRIDE ||
-    "";
-  // For SSE endpoints, allow bearer-token-only auth (no email header required)
-  if (!isSsePath) {
-    if (!emailHeader) {
-      return reply
-        .code(403)
-        .send({
-          error: {
-            code: "FORBIDDEN_EMAIL",
-            message: "Missing x-user-email",
-            details: {},
-          },
-        });
-    }
-    const isAllowed = EMAIL_ALLOWLIST.includes(emailHeader);
-    if (!isAllowed) {
-      return reply
-        .code(403)
-        .send({
-          error: {
-            code: "FORBIDDEN_EMAIL",
-            message: "Email not allowed",
-            details: { email: emailHeader },
-          },
-        });
-    }
-  }
-});
-
 const VAULT_WRITABLE = checkVaultWritable();
 
 app.get("/health", async (_req: FastifyRequest, _reply: FastifyReply) => ({
@@ -337,19 +205,7 @@ app.post("/", async (_req: FastifyRequest, reply: FastifyReply) => {
   return reply.code(200).send({ ok: true });
 });
 
-// Minimal OAuth discovery endpoints for connector probes
-app.get(
-  "/.well-known/oauth-authorization-server",
-  async (_req: FastifyRequest, reply: FastifyReply) => {
-    return reply.code(200).send({ issuer: "project-agent", authorization_endpoint: "/oauth/authorize" });
-  },
-);
-app.get(
-  "/.well-known/oauth-protected-resource",
-  async (_req: FastifyRequest, reply: FastifyReply) => {
-    return reply.code(200).send({ resource: "project-agent" });
-  },
-);
+// No OAuth/discovery surfaces; align with other MCP servers (Twitter/YouTube)
 
 // Minimal register endpoint (no-op)
 app.post("/register", async (_req: FastifyRequest, reply: FastifyReply) => {
@@ -537,6 +393,103 @@ app.post(
   },
 );
 
+// Messages endpoints (Claude may POST here with ?session_id=...) — mirror /sse handlers
+app.post(
+  "/messages/:sessionId",
+  async (
+    req: FastifyRequest<{ Params: { sessionId: string }; Body: unknown }>,
+    reply: FastifyReply,
+  ) => {
+    const entry = sseSessions.get(req.params.sessionId);
+    if (!entry) {
+      return reply
+        .code(404)
+        .send({
+          error: {
+            code: "NOT_FOUND",
+            message: "Unknown SSE session",
+            details: { sessionId: req.params.sessionId },
+          },
+        });
+    }
+    await entry.transport.handlePostMessage(
+      req.raw as any,
+      reply.raw,
+      (req as any).body,
+    );
+  },
+);
+
+app.post(
+  "/messages",
+  async (
+    req: FastifyRequest<{ Querystring: { session_id?: string; sessionId?: string }; Body: unknown }>,
+    reply: FastifyReply,
+  ) => {
+    const rawUrl = (req.raw as any)?.url as string | undefined;
+    let sessionId: string = (extractSessionId(req) ?? "") as string;
+    try {
+      (app as any).log?.info(
+        {
+          rawUrl,
+          parsedSessionId: sessionId,
+          lastSessionId,
+          size: sseSessions.size,
+          keys: Array.from(sseSessions.keys()),
+        },
+        "POST /messages received",
+      );
+    } catch {}
+
+    if (!sessionId && sseSessions.size === 1) {
+      sessionId = Array.from(sseSessions.keys())[0] as string;
+    }
+    if (!sessionId && lastSessionId) {
+      sessionId = lastSessionId as string;
+    }
+    if (!sessionId) {
+      try {
+        (app as any).log?.warn(
+          { size: sseSessions.size, lastSessionId },
+          "POST /messages no session available",
+        );
+      } catch {}
+      return reply
+        .code(405)
+        .send({
+          error: {
+            code: "SSE_NOT_READY",
+            message: "SSE connection not established; start with GET /sse",
+            details: {},
+          },
+        });
+    }
+    const entry = sseSessions.get(sessionId);
+    if (!entry) {
+      try {
+        (app as any).log?.warn(
+          { sessionId, keys: Array.from(sseSessions.keys()) },
+          "POST /messages unknown session",
+        );
+      } catch {}
+      return reply
+        .code(404)
+        .send({
+          error: {
+            code: "NOT_FOUND",
+            message: "Unknown SSE session",
+            details: { sessionId },
+          },
+        });
+    }
+    await entry.transport.handlePostMessage(
+      req.raw as any,
+      reply.raw,
+      (req as any).body,
+    );
+  },
+);
+
 // Support POST with sessionId via query string
 app.post(
   "/mcp/sse",
@@ -589,11 +542,11 @@ app.post(
         );
       } catch {}
       return reply
-        .code(503)
+        .code(404)
         .send({
           error: {
             code: "SSE_NOT_READY",
-            message: "SSE connection not established",
+            message: "SSE connection not established; open GET /sse first",
             details: {},
           },
         });
@@ -610,9 +563,9 @@ app.post(
         .code(404)
         .send({
           error: {
-            code: "NOT_FOUND",
-            message: "Unknown SSE session",
-            details: { sessionId },
+            code: "SSE_NOT_READY",
+            message: "SSE connection not established; open GET /sse first",
+            details: {},
           },
         });
     }
@@ -662,16 +615,16 @@ app.post(
           size: sseSessions.size,
           keys: Array.from(sseSessions.keys()),
         },
-        "POST /sse received",
-      );
-    } catch {}
+      "POST /sse received",
+    );
+  } catch {}
 
-    if (!sessionId) {
-      const startedAt = Date.now();
-      while (!sessionId && Date.now() - startedAt < 5000) {
-        if (sseSessions.size === 1) {
-          sessionId = Array.from(sseSessions.keys())[0] as string;
-          break;
+  if (!sessionId) {
+    const startedAt = Date.now();
+    while (!sessionId && Date.now() - startedAt < 5000) {
+      if (sseSessions.size === 1) {
+        sessionId = Array.from(sseSessions.keys())[0] as string;
+        break;
         }
         if (lastSessionId) {
           sessionId = lastSessionId as string;
@@ -695,11 +648,11 @@ app.post(
         );
       } catch {}
       return reply
-        .code(503)
+        .code(405)
         .send({
           error: {
             code: "SSE_NOT_READY",
-            message: "SSE connection not established",
+            message: "SSE connection not established; start with GET /sse",
             details: {},
           },
         });

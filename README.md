@@ -64,6 +64,7 @@ Then run any scripts or start the server; tools will read from the fixtures vaul
 - Git auto-push: `GIT_AUTO_PUSH` (default `true`), `GIT_REMOTE_NAME` (default `origin`) — after write commits the server attempts a robust push of `HEAD` to the current branch. The push flow now tries, in order: normal push → fetch+rebase → push → force-with-lease → force. Failures are logged but do not break tool responses.
 - Multi-folder roots: `PROJECT_ROOTS` (comma-separated; default `Projects`). The server scans and resolves documents across these top‑level folders (e.g., `Projects,Notes,Project Research`). `project_list` includes `folder` and `path` for each item.
 - Limits: `SNAPSHOT_MAX_BYTES` (default 262144), `APPLY_OPS_MAX_OPS` (default 128), `APPLY_OPS_MAX_LINE_BYTES` (default 16384), `SNAPSHOT_LONG_LINE_WARN_BYTES`
+- Claude compatibility: Claude may post via `/messages` using `session_id` (snake_case) instead of `/sse` + `sessionId`. The server accepts both paths and both param styles.
 
 ## Security
 
